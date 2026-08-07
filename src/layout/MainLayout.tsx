@@ -1,13 +1,9 @@
-import type { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import "../styles/main.css";
 
-interface MainLayoutProps {
-  children: ReactNode;
-}
-
-export default function MainLayout({ children }: MainLayoutProps) {
+export default function MainLayout() {
   return (
     <div className="layout">
       <Sidebar />
@@ -16,7 +12,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Header />
 
         <main className="page">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

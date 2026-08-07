@@ -4,6 +4,7 @@ import {
   loadDossiers,
   saveDossiers,
 } from "../services/dossierStorage";
+
 import type {
   Dossier,
   DossierPriority,
@@ -25,9 +26,9 @@ const defaultFilters: DossierFilters = {
 };
 
 export function useDossiers() {
-  const [dossiers, setDossiers] = useState<Dossier[]>(() => {
-    return loadDossiers() ?? initialDossiers;
-  });
+  const [dossiers, setDossiers] = useState<Dossier[]>(
+    () => loadDossiers() ?? initialDossiers,
+  );
 
   const [filters, setFilters] =
     useState<DossierFilters>(defaultFilters);
@@ -38,7 +39,9 @@ export function useDossiers() {
 
   const categories = useMemo(() => {
     return Array.from(
-      new Set(dossiers.map((dossier) => dossier.category)),
+      new Set(
+        dossiers.map((dossier) => dossier.category),
+      ),
     ).sort();
   }, [dossiers]);
 
@@ -58,7 +61,9 @@ export function useDossiers() {
           dossier.status,
           dossier.priority,
         ].some((value) =>
-          value.toLowerCase().includes(normalizedSearch),
+          value
+            .toLowerCase()
+            .includes(normalizedSearch),
         );
 
       const matchesStatus =
@@ -83,7 +88,10 @@ export function useDossiers() {
   }, [dossiers, filters]);
 
   function addDossier(
-    dossier: Omit<Dossier, "id" | "createdAt" | "updatedAt">,
+    dossier: Omit<
+      Dossier,
+      "id" | "createdAt" | "updatedAt"
+    >,
   ) {
     const now = new Date().toISOString();
 

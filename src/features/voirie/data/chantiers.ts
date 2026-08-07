@@ -1,0 +1,58 @@
+import type { Chantier } from "../types/chantier";
+
+export const initialChantiers: Chantier[] = [
+  {
+    id: 1,
+    title: "Réfection de la route des Auberges",
+    description:
+      "Reprise de la chaussée, traitement des accotements et amélioration de l’écoulement des eaux.",
+    location: "Route des Auberges",
+    company: "Entreprise Routes du Rhône",
+    manager: "Bernard Boulocher",
+    status: "En cours",
+    priority: "Haute",
+    startDate: "2026-08-03",
+    endDate: "2026-08-28",
+    estimatedBudget: 48000,
+    actualCost: 19200,
+    progress: 40,
+    createdAt: "2026-07-15T09:00:00.000Z",
+    updatedAt: "2026-08-06T15:00:00.000Z",
+  },
+  {
+    id: 2,
+    title: "Programme PATA 2026",
+    description:
+      "Traitement des zones dégradées sur plusieurs voies communales.",
+    location: "Différentes voies communales",
+    company: "À définir",
+    manager: "Commission Voirie",
+    status: "Planifié",
+    priority: "Normale",
+    startDate: "2026-09-01",
+    endDate: "2026-09-30",
+    estimatedBudget: 32000,
+    actualCost: 0,
+    progress: 10,
+    createdAt: "2026-07-22T10:00:00.000Z",
+    updatedAt: "2026-08-01T10:00:00.000Z",
+  },
+  {
+    id: 3,
+    title: "Réparation du chemin du Moulin",
+    description:
+      "Réparation ponctuelle des nids-de-poule et reprise d’un fossé.",
+    location: "Chemin du Moulin",
+    company: "Services techniques",
+    manager: "Service technique",
+    status: "À étudier",
+    priority: "Urgente",
+    startDate: "2026-08-15",
+    endDate: "2026-08-20",
+    estimatedBudget: 8500,
+    actualCost: 0,
+    progress: 0,
+    createdAt: "2026-08-04T08:00:00.000Z",
+    updatedAt: "2026-08-04T08:00:00.000Z",
+  },
+];
