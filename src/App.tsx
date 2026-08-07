@@ -1,10 +1,10 @@
 import MainLayout from "./layout/MainLayout";
-import Dashboard from "./pages/Dashboard";
+import DossiersPage from "./features/dossiers/pages/DossiersPage";
 
 export default function App() {
   return (
     <MainLayout>
-      <Dashboard />
+      <DossiersPage />
     </MainLayout>
   );
 }

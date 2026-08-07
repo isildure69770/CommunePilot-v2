@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import StatsGrid from "../components/StatsGrid";
 import SearchBar from "../components/SearchBar";
 import ProjectList from "../components/ProjectList";
+import NewProjectModal from "../components/NewProjectModal";
 import type { Project } from "../components/ProjectCard";
 
-const projects: Project[] = [
+const initialProjects: Project[] = [
   {
     id: 1,
     title: "Réfection de la route des Auberges",
@@ -45,18 +46,18 @@ const projects: Project[] = [
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
+  const [projects, setProjects] = useState(initialProjects);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredProjects = useMemo(() => {
-    const normalizedSearch = search
-      .trim()
-      .toLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
 
     if (!normalizedSearch) {
       return projects;
     }
 
-    return projects.filter((project) => {
-      return [
+    return projects.filter((project) =>
+      [
         project.title,
         project.category,
         project.manager,
@@ -64,9 +65,16 @@ export default function Dashboard() {
         project.priority,
       ].some((value) =>
         value.toLowerCase().includes(normalizedSearch),
-      );
-    });
-  }, [search]);
+      ),
+    );
+  }, [projects, search]);
+
+  function handleCreateProject(project: Project) {
+    setProjects((currentProjects) => [
+      project,
+      ...currentProjects,
+    ]);
+  }
 
   return (
     <section className="dashboard-page">
@@ -84,7 +92,11 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <button className="primary-button" type="button">
+        <button
+          className="primary-button"
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+        >
           + Nouveau dossier
         </button>
       </div>
@@ -110,6 +122,12 @@ export default function Dashboard() {
 
         <ProjectList projects={filteredProjects} />
       </section>
+
+      <NewProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={handleCreateProject}
+      />
     </section>
   );
 }
