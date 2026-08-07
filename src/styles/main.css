@@ -1565,3 +1565,120 @@ body{
     grid-template-columns: 1fr;
   }
 }
+.signalement-form-modal {
+  width: min(950px, calc(100vw - 40px));
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.form-location-summary {
+  display: grid;
+  gap: 5px;
+  align-content: center;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.form-location-summary span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.form-location-summary strong {
+  color: #16365d;
+  font-size: 13px;
+}
+/* =========================================================
+   CARTE GÉNÉRALE DE LA COMMUNE
+   ========================================================= */
+
+.commune-map-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.commune-map-legend {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+
+  padding: 12px 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  background: white;
+}
+
+.commune-map-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #475569;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legend-dot {
+  display: inline-block;
+
+  width: 11px;
+  height: 11px;
+
+  border-radius: 50%;
+}
+
+.chantier-dot {
+  background: #16a34a;
+}
+
+.signalement-dot {
+  background: #dc2626;
+}
+
+.commune-map-container {
+  width: 100%;
+
+  height: 650px;
+  min-height: 520px;
+
+  overflow: hidden;
+
+  border: 1px solid #dbe3ec;
+  border-radius: 18px;
+
+  background: #e2e8f0;
+
+  box-shadow:
+    0 6px 22px rgba(15, 23, 42, 0.08);
+}
+
+.commune-map-container .leaflet-container {
+  width: 100%;
+  height: 100%;
+
+  z-index: 1;
+
+  font-family: inherit;
+}
+
+.map-popup-content {
+  display: grid;
+  gap: 5px;
+
+  min-width: 190px;
+}
+
+.map-popup-content strong {
+  color: #16365d;
+}
+
+.map-popup-content span {
+  color: #475569;
+
+  font-size: 12px;
+}

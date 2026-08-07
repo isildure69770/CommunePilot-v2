@@ -4,6 +4,8 @@ import {
   type FormEvent,
 } from "react";
 
+import MapClickSelector from "../../map/components/MapClickSelector";
+
 import type {
   Signalement,
   SignalementCategory,
@@ -23,6 +25,9 @@ interface SignalementFormProps {
   onSubmit: (value: SignalementFormValue) => void;
 }
 
+const DEFAULT_LATITUDE = 45.790833;
+const DEFAULT_LONGITUDE = 4.4675;
+
 const emptyForm: SignalementFormValue = {
   title: "",
   description: "",
@@ -30,8 +35,8 @@ const emptyForm: SignalementFormValue = {
   status: "Nouveau",
   priority: "Normale",
   location: "",
-  latitude: 45.790833,
-  longitude: 4.4675,
+  latitude: DEFAULT_LATITUDE,
+  longitude: DEFAULT_LONGITUDE,
   reporter: "Mairie",
   manager: "",
 };
@@ -54,11 +59,15 @@ export default function SignalementForm({
         status: signalement.status,
         priority: signalement.priority,
         location: signalement.location,
-        latitude: signalement.latitude,
-        longitude: signalement.longitude,
+        latitude:
+          signalement.latitude ?? DEFAULT_LATITUDE,
+        longitude:
+          signalement.longitude ?? DEFAULT_LONGITUDE,
         reporter: signalement.reporter,
         manager: signalement.manager,
         resolvedAt: signalement.resolvedAt,
+        convertedToChantierId:
+          signalement.convertedToChantierId,
       });
     } else {
       setForm(emptyForm);
@@ -69,12 +78,14 @@ export default function SignalementForm({
     return null;
   }
 
-  function updateField<Key extends keyof SignalementFormValue>(
+  function updateField<
+    Key extends keyof SignalementFormValue,
+  >(
     key: Key,
     value: SignalementFormValue[Key],
   ) {
-    setForm((current) => ({
-      ...current,
+    setForm((currentForm) => ({
+      ...currentForm,
       [key]: value,
     }));
   }
@@ -98,7 +109,8 @@ export default function SignalementForm({
       title: form.title.trim(),
       description: form.description.trim(),
       location: form.location.trim(),
-      reporter: form.reporter.trim(),
+      reporter:
+        form.reporter.trim() || "Mairie",
       manager: form.manager.trim(),
     });
 
@@ -111,7 +123,7 @@ export default function SignalementForm({
       onMouseDown={onClose}
     >
       <div
-        className="modal"
+        className="modal signalement-form-modal"
         onMouseDown={(event) =>
           event.stopPropagation()
         }
@@ -142,10 +154,10 @@ export default function SignalementForm({
         </div>
 
         <form
-          className="project-form"
+          className="project-form signalement-form"
           onSubmit={handleSubmit}
         >
-          <label>
+          <label className="form-wide">
             Intitulé
             <input
               type="text"
@@ -160,7 +172,7 @@ export default function SignalementForm({
             />
           </label>
 
-          <label>
+          <label className="form-wide">
             Description
             <textarea
               rows={4}
@@ -187,15 +199,33 @@ export default function SignalementForm({
                 )
               }
             >
-              <option>Voirie</option>
-              <option>Bâtiment</option>
-              <option>Espaces verts</option>
-              <option>Éclairage public</option>
-              <option>Eau</option>
-              <option>Déchets</option>
-              <option>Sécurité</option>
-              <option>Mobilier urbain</option>
-              <option>Divers</option>
+              <option value="Voirie">
+                Voirie
+              </option>
+              <option value="Bâtiment">
+                Bâtiment
+              </option>
+              <option value="Espaces verts">
+                Espaces verts
+              </option>
+              <option value="Éclairage public">
+                Éclairage public
+              </option>
+              <option value="Eau">
+                Eau
+              </option>
+              <option value="Déchets">
+                Déchets
+              </option>
+              <option value="Sécurité">
+                Sécurité
+              </option>
+              <option value="Mobilier urbain">
+                Mobilier urbain
+              </option>
+              <option value="Divers">
+                Divers
+              </option>
             </select>
           </label>
 
@@ -211,12 +241,24 @@ export default function SignalementForm({
                 )
               }
             >
-              <option>Nouveau</option>
-              <option>À traiter</option>
-              <option>En cours</option>
-              <option>En attente</option>
-              <option>Résolu</option>
-              <option>Classé</option>
+              <option value="Nouveau">
+                Nouveau
+              </option>
+              <option value="À traiter">
+                À traiter
+              </option>
+              <option value="En cours">
+                En cours
+              </option>
+              <option value="En attente">
+                En attente
+              </option>
+              <option value="Résolu">
+                Résolu
+              </option>
+              <option value="Classé">
+                Classé
+              </option>
             </select>
           </label>
 
@@ -232,26 +274,19 @@ export default function SignalementForm({
                 )
               }
             >
-              <option>Faible</option>
-              <option>Normale</option>
-              <option>Haute</option>
-              <option>Urgente</option>
+              <option value="Faible">
+                Faible
+              </option>
+              <option value="Normale">
+                Normale
+              </option>
+              <option value="Haute">
+                Haute
+              </option>
+              <option value="Urgente">
+                Urgente
+              </option>
             </select>
-          </label>
-
-          <label>
-            Lieu
-            <input
-              type="text"
-              value={form.location}
-              onChange={(event) =>
-                updateField(
-                  "location",
-                  event.target.value,
-                )
-              }
-              required
-            />
           </label>
 
           <label>
@@ -268,6 +303,43 @@ export default function SignalementForm({
             />
           </label>
 
+          <label className="form-wide">
+            Lieu
+            <input
+              type="text"
+              value={form.location}
+              onChange={(event) =>
+                updateField(
+                  "location",
+                  event.target.value,
+                )
+              }
+              placeholder="Ex. Route des Auberges"
+              required
+            />
+          </label>
+
+          <div className="form-wide">
+            <MapClickSelector
+              latitude={form.latitude}
+              longitude={form.longitude}
+              title={
+                form.title ||
+                "Emplacement du signalement"
+              }
+              onChange={(
+                latitude,
+                longitude,
+              ) => {
+                setForm((currentForm) => ({
+                  ...currentForm,
+                  latitude,
+                  longitude,
+                }));
+              }}
+            />
+          </div>
+
           <label>
             Responsable
             <input
@@ -283,7 +355,17 @@ export default function SignalementForm({
             />
           </label>
 
-          <div className="modal-actions">
+          <div className="form-location-summary">
+            <span>Coordonnées enregistrées</span>
+
+            <strong>
+              {form.latitude.toFixed(6)}
+              {" · "}
+              {form.longitude.toFixed(6)}
+            </strong>
+          </div>
+
+          <div className="modal-actions form-wide">
             <button
               className="secondary-button"
               type="button"

@@ -8,6 +8,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import DossiersPage from "./features/dossiers/pages/DossiersPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
+import CommuneMapPage from "./features/map/pages/CommuneMapPage";
 
 export default function App() {
   return (
@@ -31,6 +32,11 @@ export default function App() {
         <Route
           path="/signalements"
           element={<SignalementsPage />}
+        />
+
+        <Route
+          path="/carte"
+          element={<CommuneMapPage />}
         />
 
         <Route

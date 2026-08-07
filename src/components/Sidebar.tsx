@@ -45,7 +45,12 @@ const navigationItems = [
     label: "Paramètres",
     path: "/parametres",
     icon: "⚙️",
-  },
+  },{
+  label: "Carte",
+  path: "/carte",
+  icon: "🗺️",
+},
+
 ];
 
 export default function Sidebar() {

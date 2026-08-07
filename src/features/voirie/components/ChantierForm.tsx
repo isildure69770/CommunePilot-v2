@@ -4,6 +4,8 @@ import {
   type FormEvent,
 } from "react";
 
+import MapClickSelector from "../../map/components/MapClickSelector";
+
 import type {
   Chantier,
   ChantierPriority,
@@ -22,13 +24,16 @@ interface ChantierFormProps {
   onSubmit: (value: ChantierFormValue) => void;
 }
 
+const DEFAULT_LATITUDE = 45.790833;
+const DEFAULT_LONGITUDE = 4.4675;
+
 const emptyForm: ChantierFormValue = {
   title: "",
   description: "",
   location: "",
 
-  latitude: 45.7947,
-  longitude: 4.3155,
+  latitude: DEFAULT_LATITUDE,
+  longitude: DEFAULT_LONGITUDE,
 
   company: "",
   manager: "",
@@ -41,6 +46,7 @@ const emptyForm: ChantierFormValue = {
 
   estimatedBudget: 0,
   actualCost: 0,
+
   progress: 0,
 };
 
@@ -56,27 +62,33 @@ export default function ChantierForm({
   useEffect(() => {
     if (chantier) {
       setForm({
-  title: chantier.title,
-  description: chantier.description,
+        title: chantier.title,
+        description: chantier.description,
+        location: chantier.location,
 
-  location: chantier.location,
-  latitude: chantier.latitude,
-  longitude: chantier.longitude,
+        latitude:
+          chantier.latitude ?? DEFAULT_LATITUDE,
 
-  company: chantier.company,
-  manager: chantier.manager,
+        longitude:
+          chantier.longitude ?? DEFAULT_LONGITUDE,
 
-  status: chantier.status,
-  priority: chantier.priority,
+        company: chantier.company,
+        manager: chantier.manager,
 
-  startDate: chantier.startDate,
-  endDate: chantier.endDate,
+        status: chantier.status,
+        priority: chantier.priority,
 
-  estimatedBudget: chantier.estimatedBudget,
-  actualCost: chantier.actualCost,
+        startDate: chantier.startDate,
+        endDate: chantier.endDate,
 
-  progress: chantier.progress,
-});
+        estimatedBudget:
+          chantier.estimatedBudget,
+
+        actualCost:
+          chantier.actualCost,
+
+        progress: chantier.progress,
+      });
     } else {
       setForm(emptyForm);
     }
@@ -86,7 +98,9 @@ export default function ChantierForm({
     return null;
   }
 
-  function updateField<Key extends keyof ChantierFormValue>(
+  function updateField<
+    Key extends keyof ChantierFormValue,
+  >(
     key: Key,
     value: ChantierFormValue[Key],
   ) {
@@ -96,7 +110,9 @@ export default function ChantierForm({
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     if (
@@ -110,15 +126,31 @@ export default function ChantierForm({
 
     onSubmit({
       ...form,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      location: form.location.trim(),
-      company: form.company.trim() || "À définir",
-      manager: form.manager.trim(),
-      progress: Math.min(
-        100,
-        Math.max(0, form.progress),
-      ),
+
+      title:
+        form.title.trim(),
+
+      description:
+        form.description.trim(),
+
+      location:
+        form.location.trim(),
+
+      company:
+        form.company.trim() ||
+        "À définir",
+
+      manager:
+        form.manager.trim(),
+
+      progress:
+        Math.min(
+          100,
+          Math.max(
+            0,
+            form.progress,
+          ),
+        ),
     });
 
     onClose();
@@ -194,7 +226,7 @@ export default function ChantierForm({
             />
           </label>
 
-          <label>
+          <label className="form-wide">
             Localisation
             <input
               type="text"
@@ -205,39 +237,45 @@ export default function ChantierForm({
                   event.target.value,
                 )
               }
+              placeholder="Ex. Route des Auberges"
               required
             />
           </label>
 
-<label>
-  Latitude
-  <input
-    type="number"
-    step="0.000001"
-    value={form.latitude}
-    onChange={(event) =>
-      updateField(
-        "latitude",
-        Number(event.target.value),
-      )
-    }
-  />
-</label>
+          <div className="form-wide">
+            <MapClickSelector
+              latitude={form.latitude}
+              longitude={form.longitude}
+              title={
+                form.title ||
+                "Emplacement du chantier"
+              }
+              onChange={(
+                latitude,
+                longitude,
+              ) => {
+                setForm(
+                  (currentForm) => ({
+                    ...currentForm,
+                    latitude,
+                    longitude,
+                  }),
+                );
+              }}
+            />
+          </div>
 
-<label>
-  Longitude
-  <input
-    type="number"
-    step="0.000001"
-    value={form.longitude}
-    onChange={(event) =>
-      updateField(
-        "longitude",
-        Number(event.target.value),
-      )
-    }
-  />
-</label>
+          <div className="form-location-summary form-wide">
+            <span>
+              Coordonnées enregistrées
+            </span>
+
+            <strong>
+              {form.latitude.toFixed(6)}
+              {" · "}
+              {form.longitude.toFixed(6)}
+            </strong>
+          </div>
 
           <label>
             Responsable
@@ -275,22 +313,27 @@ export default function ChantierForm({
               onChange={(event) =>
                 updateField(
                   "status",
-                  event.target.value as ChantierStatus,
+                  event.target
+                    .value as ChantierStatus,
                 )
               }
             >
               <option value="À étudier">
                 À étudier
               </option>
+
               <option value="Planifié">
                 Planifié
               </option>
+
               <option value="En cours">
                 En cours
               </option>
+
               <option value="Suspendu">
                 Suspendu
               </option>
+
               <option value="Terminé">
                 Terminé
               </option>
@@ -304,19 +347,23 @@ export default function ChantierForm({
               onChange={(event) =>
                 updateField(
                   "priority",
-                  event.target.value as ChantierPriority,
+                  event.target
+                    .value as ChantierPriority,
                 )
               }
             >
               <option value="Basse">
                 Basse
               </option>
+
               <option value="Normale">
                 Normale
               </option>
+
               <option value="Haute">
                 Haute
               </option>
+
               <option value="Urgente">
                 Urgente
               </option>
@@ -361,7 +408,9 @@ export default function ChantierForm({
               onChange={(event) =>
                 updateField(
                   "estimatedBudget",
-                  Number(event.target.value),
+                  Number(
+                    event.target.value,
+                  ),
                 )
               }
             />
@@ -377,14 +426,18 @@ export default function ChantierForm({
               onChange={(event) =>
                 updateField(
                   "actualCost",
-                  Number(event.target.value),
+                  Number(
+                    event.target.value,
+                  ),
                 )
               }
             />
           </label>
 
           <label className="form-wide">
-            Avancement : {form.progress} %
+            Avancement :{" "}
+            {form.progress} %
+
             <input
               type="range"
               min="0"
@@ -394,7 +447,9 @@ export default function ChantierForm({
               onChange={(event) =>
                 updateField(
                   "progress",
-                  Number(event.target.value),
+                  Number(
+                    event.target.value,
+                  ),
                 )
               }
             />
