@@ -1,3 +1,5 @@
+import "leaflet/dist/leaflet.css";
+
 import {
   MapContainer,
   Marker,
@@ -6,40 +8,27 @@ import {
   useMapEvents,
 } from "react-leaflet";
 
-import L from "leaflet";
 
-import "leaflet/dist/leaflet.css";
-
-import marker2x from "leaflet/dist/images/marker-icon-2x.png";
-import marker from "leaflet/dist/images/marker-icon.png";
-import shadow from "leaflet/dist/images/marker-shadow.png";
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: marker2x,
-  iconUrl: marker,
-  shadowUrl: shadow,
-});
 
 interface MapClickSelectorProps {
   latitude: number;
   longitude: number;
-
-  onChange: (
-    latitude: number,
-    longitude: number,
-  ) => void;
-
   title?: string;
   height?: number;
+
+  onChange: (
+  latitude: number,
+  longitude: number,
+  location?: string,
+) => void;
 }
 
 interface ClickHandlerProps {
   onChange: (
-    latitude: number,
-    longitude: number,
-  ) => void;
+  latitude: number,
+  longitude: number,
+  location?: string,
+) => void;
 }
 
 function ClickHandler({
@@ -60,9 +49,9 @@ function ClickHandler({
 export default function MapClickSelector({
   latitude,
   longitude,
-  onChange,
   title = "Emplacement sélectionné",
   height = 380,
+  onChange,
 }: MapClickSelectorProps) {
   return (
     <div className="map-click-selector">
@@ -73,8 +62,8 @@ export default function MapClickSelector({
           </strong>
 
           <p>
-            Cliquez directement sur la carte
-            pour déplacer le marqueur.
+            Cliquez sur la carte pour
+            choisir l'emplacement.
           </p>
         </div>
 
@@ -124,11 +113,8 @@ export default function MapClickSelector({
             draggable
             eventHandlers={{
               dragend(event) {
-                const currentMarker =
-                  event.target;
-
                 const position =
-                  currentMarker.getLatLng();
+                  event.target.getLatLng();
 
                 onChange(
                   position.lat,
@@ -145,8 +131,8 @@ export default function MapClickSelector({
       </div>
 
       <p className="map-selector-help">
-        Vous pouvez soit cliquer sur la carte,
-        soit déplacer directement le marqueur.
+        Tu peux cliquer sur la carte ou déplacer
+        directement le marqueur.
       </p>
     </div>
   );

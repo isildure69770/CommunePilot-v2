@@ -1682,3 +1682,108 @@ body{
 
   font-size: 12px;
 }
+.commune-map-statistics {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.commune-map-statistics article {
+  display: grid;
+  gap: 6px;
+
+  padding: 16px 18px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  background: white;
+}
+
+.commune-map-statistics span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.commune-map-statistics strong {
+  color: #16365d;
+  font-size: 28px;
+}
+
+.map-popup-content p {
+  margin: 6px 0 0;
+
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .commune-map-statistics {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .commune-map-statistics {
+    grid-template-columns: 1fr;
+  }
+}
+.map-warning {
+  padding: 12px 14px;
+
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+
+  background: #fffbeb;
+
+  color: #92400e;
+
+  font-size: 13px;
+  font-weight: 600;
+}.map-create-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  padding: 14px 18px;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+
+  background: #eff6ff;
+}
+
+.map-create-panel > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.map-create-panel strong {
+  color: #16365d;
+}
+
+.map-create-panel span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.map-create-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 700px) {
+  .map-create-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .map-create-actions {
+    justify-content: flex-end;
+  }
+}

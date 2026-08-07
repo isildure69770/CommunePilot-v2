@@ -18,11 +18,22 @@ type SignalementFormValue = Omit<
   "id" | "createdAt" | "updatedAt"
 >;
 
+interface InitialPosition {
+  latitude: number;
+  longitude: number;
+}
+
 interface SignalementFormProps {
   isOpen: boolean;
   signalement?: Signalement | null;
+
+  initialPosition?: InitialPosition | null;
+
   onClose: () => void;
-  onSubmit: (value: SignalementFormValue) => void;
+
+  onSubmit: (
+    value: SignalementFormValue,
+  ) => void;
 }
 
 const DEFAULT_LATITUDE = 45.790833;
@@ -44,6 +55,7 @@ const emptyForm: SignalementFormValue = {
 export default function SignalementForm({
   isOpen,
   signalement,
+  initialPosition = null,
   onClose,
   onSubmit,
 }: SignalementFormProps) {
@@ -70,9 +82,23 @@ export default function SignalementForm({
           signalement.convertedToChantierId,
       });
     } else {
-      setForm(emptyForm);
-    }
-  }, [signalement, isOpen]);
+  setForm({
+    ...emptyForm,
+
+    latitude:
+      initialPosition?.latitude ??
+      DEFAULT_LATITUDE,
+
+    longitude:
+      initialPosition?.longitude ??
+      DEFAULT_LONGITUDE,
+  });
+}
+  }, [
+  signalement,
+  isOpen,
+  initialPosition,
+]);
 
   if (!isOpen) {
     return null;

@@ -1,35 +1,97 @@
-import "leaflet/dist/leaflet.css";
+import { useState } from "react";
+
+import CommuneMap from "../components/CommuneMap";
+
+import SignalementForm from "../../signalements/components/SignalementForm";
 
 import {
-  MapContainer,
-  Marker,
-  Popup,
-  TileLayer,
-} from "react-leaflet";
+  useCommuneMap,
+} from "../hooks/useCommuneMap";
 
-import L from "leaflet";
+import {
+  useSignalements,
+} from "../../signalements/hooks/useSignalements";
 
-import marker2x from "leaflet/dist/images/marker-icon-2x.png";
-import marker from "leaflet/dist/images/marker-icon.png";
-import shadow from "leaflet/dist/images/marker-shadow.png";
+import type {
+  Signalement,
+} from "../../signalements/types/signalement";
 
-import { initialChantiers } from "../../voirie/data/chantiers";
-import { initialSignalements } from "../../signalements/data/signalements";
-
-
-
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: marker2x,
-  iconUrl: marker,
-  shadowUrl: shadow,
-});
-
-const CENTER_LATITUDE = 45.790833;
-const CENTER_LONGITUDE = 4.4675;
+interface SelectedPosition {
+  latitude: number;
+  longitude: number;
+}
 
 export default function CommuneMapPage() {
+  const {
+    markers,
+    statistics,
+    refresh,
+  } = useCommuneMap();
+
+  const {
+    addSignalement,
+  } = useSignalements();
+
+  const [
+    selectedPosition,
+    setSelectedPosition,
+  ] = useState<SelectedPosition | null>(
+    null,
+  );
+
+  const [
+    isSignalementFormOpen,
+    setIsSignalementFormOpen,
+  ] = useState(false);
+
+  function handleMapClick(
+    latitude: number,
+    longitude: number,
+  ) {
+    setSelectedPosition({
+      latitude,
+      longitude,
+    });
+  }
+
+  function openSignalementForm() {
+    if (!selectedPosition) {
+      return;
+    }
+
+    setIsSignalementFormOpen(true);
+  }
+
+  function closeSignalementForm() {
+    setIsSignalementFormOpen(false);
+  }
+
+  function cancelSelectedPosition() {
+    setSelectedPosition(null);
+    setIsSignalementFormOpen(false);
+  }
+
+  function handleCreateSignalement(
+    value: Omit<
+      Signalement,
+      "id" | "createdAt" | "updatedAt"
+    >,
+  ) {
+    addSignalement(value);
+
+    setIsSignalementFormOpen(false);
+    setSelectedPosition(null);
+
+    /*
+     * useSignalements sauvegarde dans localStorage.
+     * On laisse React terminer la mise à jour avant
+     * de relire les données de la carte.
+     */
+    window.setTimeout(() => {
+      refresh();
+    }, 50);
+  }
+
   return (
     <section className="commune-map-page">
       <div className="page-heading">
@@ -43,10 +105,61 @@ export default function CommuneMapPage() {
           </h2>
 
           <p>
-            Visualisez les chantiers et les signalements
-            sur une seule carte.
+            Visualisez les chantiers et les
+            signalements enregistrés dans
+            CommunePilot.
           </p>
         </div>
+
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={refresh}
+        >
+          Actualiser la carte
+        </button>
+      </div>
+
+      <div className="commune-map-statistics">
+        <article>
+          <span>
+            Total
+          </span>
+
+          <strong>
+            {statistics.total}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Chantiers
+          </span>
+
+          <strong>
+            {statistics.chantiers}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Signalements
+          </span>
+
+          <strong>
+            {statistics.signalements}
+          </strong>
+        </article>
+
+        <article>
+          <span>
+            Urgents
+          </span>
+
+          <strong>
+            {statistics.urgents}
+          </strong>
+        </article>
       </div>
 
       <div className="commune-map-legend">
@@ -61,85 +174,74 @@ export default function CommuneMapPage() {
         </div>
       </div>
 
-      <div className="commune-map-container">
-        <MapContainer
-          center={[
-            CENTER_LATITUDE,
-            CENTER_LONGITUDE,
-          ]}
-          zoom={15}
-          scrollWheelZoom
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-        >
-          <TileLayer
-            attribution="© OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      {selectedPosition && (
+        <div className="map-create-panel">
+          <div>
+            <strong>
+              📍 Emplacement sélectionné
+            </strong>
 
-          {initialChantiers.map((chantier) => (
-            <Marker
-              key={`chantier-${chantier.id}`}
-              position={[
-                chantier.latitude,
-                chantier.longitude,
-              ]}
+            <span>
+              Latitude :{" "}
+              {selectedPosition.latitude.toFixed(6)}
+            </span>
+
+            <span>
+              Longitude :{" "}
+              {selectedPosition.longitude.toFixed(6)}
+            </span>
+          </div>
+
+          <div className="map-create-actions">
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={cancelSelectedPosition}
             >
-              <Popup>
-                <div className="map-popup-content">
-                  <strong>
-                    🚧 {chantier.title}
-                  </strong>
+              Annuler
+            </button>
 
-                  <span>
-                    {chantier.location}
-                  </span>
-
-                  <span>
-                    Statut : {chantier.status}
-                  </span>
-
-                  <span>
-                    Avancement : {chantier.progress} %
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-
-          {initialSignalements.map((signalement) => (
-            <Marker
-              key={`signalement-${signalement.id}`}
-              position={[
-                signalement.latitude,
-                signalement.longitude,
-              ]}
+            <button
+              className="primary-button"
+              type="button"
+              onClick={openSignalementForm}
             >
-              <Popup>
-                <div className="map-popup-content">
-                  <strong>
-                    ⚠️ {signalement.title}
-                  </strong>
+              + Créer un signalement ici
+            </button>
+          </div>
+        </div>
+      )}
 
-                  <span>
-                    {signalement.location}
-                  </span>
+      <CommuneMap
+        markers={markers}
+        selectedPosition={selectedPosition}
+        onMapClick={handleMapClick}
+      />
 
-                  <span>
-                    Statut : {signalement.status}
-                  </span>
+      {statistics.sansCoordonnees > 0 && (
+        <div className="map-warning">
+          {statistics.sansCoordonnees} élément
+          {statistics.sansCoordonnees > 1
+            ? "s"
+            : ""}{" "}
+          sans coordonnées GPS.
+        </div>
+      )}
 
-                  <span>
-                    Priorité : {signalement.priority}
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
+      {markers.length === 0 && (
+        <div className="empty-state">
+          Aucun chantier ou signalement
+          localisé.
+        </div>
+      )}
+
+      <SignalementForm
+        isOpen={isSignalementFormOpen}
+        signalement={null}
+        initialPosition={selectedPosition}
+        onClose={closeSignalementForm}
+        onSubmit={handleCreateSignalement}
+      />
     </section>
   );
 }
