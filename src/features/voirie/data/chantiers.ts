@@ -7,7 +7,9 @@ export const initialChantiers: Chantier[] = [
     description:
       "Reprise de la chaussée, traitement des accotements et amélioration de l’écoulement des eaux.",
     location: "Route des Auberges",
-    company: "Entreprise Routes du Rhône",
+    latitude: 45.7947,
+    longitude: 4.3155,
+company: "Entreprise Routes du Rhône",
     manager: "Bernard Boulocher",
     status: "En cours",
     priority: "Haute",
@@ -25,6 +27,8 @@ export const initialChantiers: Chantier[] = [
     description:
       "Traitement des zones dégradées sur plusieurs voies communales.",
     location: "Différentes voies communales",
+    latitude: 45.7947,
+    longitude: 4.3155,
     company: "À définir",
     manager: "Commission Voirie",
     status: "Planifié",
@@ -43,6 +47,8 @@ export const initialChantiers: Chantier[] = [
     description:
       "Réparation ponctuelle des nids-de-poule et reprise d’un fossé.",
     location: "Chemin du Moulin",
+    latitude: 45.7947,
+    longitude: 4.3155,
     company: "Services techniques",
     manager: "Service technique",
     status: "À étudier",

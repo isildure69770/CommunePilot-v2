@@ -890,3 +890,678 @@ body{
     flex: 1;
   }
 }
+.signalements-page {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.signalement-statistics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.signalement-statistics article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 3px 14px rgba(15, 35, 55, 0.05);
+}
+
+.signalement-statistics span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.signalement-statistics strong {
+  color: #16365d;
+  font-size: 36px;
+}
+
+.signalement-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(280px, 2fr)
+    minmax(170px, 1fr)
+    minmax(170px, 1fr)
+    auto;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: white;
+}
+
+.signalement-filters input,
+.signalement-filters select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: white;
+  color: #0f172a;
+  font: inherit;
+  outline: none;
+}
+
+.signalement-filters input:focus,
+.signalement-filters select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.signalements-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #64748b;
+}
+
+.signalements-summary strong {
+  color: #16365d;
+  font-size: 28px;
+}
+
+.signalements-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(330px, 1fr)
+  );
+  gap: 20px;
+}
+
+.signalement-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 300px;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 3px 14px rgba(15, 35, 55, 0.06);
+}
+
+.signalement-card-header,
+.signalement-card-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.signalement-category {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.signalement-card h3 {
+  font-size: 21px;
+  line-height: 1.35;
+}
+
+.signalement-description {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.signalement-meta {
+  display: grid;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.signalement-card-footer {
+  align-items: center;
+  margin-top: auto;
+}
+
+.signalement-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.priority-faible {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.status-nouveau {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-resolu {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-classe {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+@media (max-width: 1050px) {
+  .signalement-statistics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .signalement-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .signalement-statistics,
+  .signalement-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .signalements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signalement-card-header,
+  .signalement-card-footer {
+    flex-direction: column;
+  }
+
+  .signalement-actions {
+    width: 100%;
+  }
+
+  .signalement-actions button {
+    flex: 1;
+  }
+}
+/* =========================================================
+   COMMUNEPILOT — BLOC 5 SIGNALMENTS PRO
+   ========================================================= */
+
+.signalement-details-modal {
+  width: min(1050px, calc(100vw - 40px));
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 20px;
+  background: #f8fafc;
+  box-shadow:
+    0 30px 90px rgba(15, 23, 42, 0.35);
+}
+
+.signalement-details-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 26px;
+
+  border-bottom:
+    1px solid #e2e8f0;
+
+  background: white;
+}
+
+.signalement-details-header h2 {
+  margin: 5px 0;
+}
+
+.signalement-details-header p {
+  color: #64748b;
+}
+
+.signalement-details-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.signalement-details-content {
+  display: grid;
+  gap: 20px;
+
+  padding: 24px;
+}
+
+.signalement-details-section {
+  display: grid;
+  gap: 18px;
+
+  padding: 22px;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 16px;
+
+  background: white;
+}
+
+.signalement-details-section h3 {
+  margin: 0;
+
+  color: #16365d;
+}
+
+.signalement-details-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+}
+
+.signalement-details-grid > div {
+  display: grid;
+  gap: 5px;
+
+  padding: 14px;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+}
+
+.signalement-details-grid span,
+.signalement-full-description span {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+.signalement-details-grid strong {
+  color: #1e293b;
+}
+
+.signalement-full-description {
+  display: grid;
+  gap: 8px;
+}
+
+.signalement-full-description p {
+  margin: 0;
+
+  color: #334155;
+
+  line-height: 1.6;
+
+  white-space: pre-wrap;
+}
+
+/* =========================================================
+   CARTE LEAFLET
+   ========================================================= */
+
+.signalement-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.signalement-section-heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.signalement-section-heading small {
+  color: #64748b;
+}
+
+.signalement-map {
+  overflow: hidden;
+
+  border:
+    1px solid #dbe3ec;
+
+  border-radius: 14px;
+
+  background: #e2e8f0;
+}
+
+.signalement-map .leaflet-container {
+  z-index: 1;
+
+  width: 100%;
+
+  font-family: inherit;
+}
+
+/* =========================================================
+   CONVERSION SIGNALMENT -> CHANTIER
+   ========================================================= */
+
+.conversion-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.conversion-section > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.conversion-section p {
+  margin: 0;
+
+  color: #64748b;
+}
+
+.conversion-success {
+  padding: 12px 16px;
+
+  border:
+    1px solid #a7f3d0;
+
+  border-radius: 10px;
+
+  background: #ecfdf5;
+
+  color: #047857;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   NOTES
+   ========================================================= */
+
+.note-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.note-editor textarea {
+  width: 100%;
+
+  resize: vertical;
+
+  box-sizing: border-box;
+
+  border:
+    1px solid #cbd5e1;
+
+  border-radius: 10px;
+
+  padding: 12px;
+
+  background: white;
+
+  color: #0f172a;
+
+  font: inherit;
+
+  outline: none;
+}
+
+.note-editor textarea:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.12);
+}
+
+.note-editor .primary-button {
+  justify-self: end;
+}
+
+.notes-list {
+  display: grid;
+  gap: 12px;
+}
+
+.signalement-note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 15px;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+}
+
+.signalement-note > div {
+  min-width: 0;
+}
+
+.signalement-note p {
+  margin: 0 0 6px;
+
+  color: #334155;
+
+  line-height: 1.5;
+
+  white-space: pre-wrap;
+
+  overflow-wrap: anywhere;
+}
+
+.signalement-note time {
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+.signalement-note button {
+  flex: 0 0 auto;
+
+  align-self: flex-start;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #be123c;
+
+  font: inherit;
+
+  cursor: pointer;
+}
+
+.signalement-note button:hover {
+  text-decoration: underline;
+}
+
+.empty-note {
+  padding: 14px;
+
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  color: #94a3b8;
+
+  font-style: italic;
+}
+
+/* =========================================================
+   HISTORIQUE
+   ========================================================= */
+
+.history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.history-entry {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.history-dot {
+  flex: 0 0 auto;
+
+  width: 10px;
+  height: 10px;
+
+  margin-top: 5px;
+
+  border-radius: 50%;
+
+  background: #2563eb;
+}
+
+.history-entry > div {
+  display: grid;
+  gap: 4px;
+}
+
+.history-entry strong {
+  color: #334155;
+}
+
+.history-entry time {
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   PHOTOS
+   ========================================================= */
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+.signalement-photo-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(190px, 1fr)
+    );
+
+  gap: 16px;
+}
+
+.signalement-photo-card {
+  display: grid;
+  gap: 10px;
+
+  overflow: hidden;
+
+  padding-bottom: 10px;
+
+  border:
+    1px solid #e2e8f0;
+
+  border-radius: 14px;
+
+  background: #f8fafc;
+}
+
+.signalement-photo-card img {
+  display: block;
+
+  width: 100%;
+  height: 160px;
+
+  object-fit: cover;
+
+  background: #e2e8f0;
+}
+
+.signalement-photo-card .danger-button {
+  justify-self: end;
+
+  margin-right: 10px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .signalement-details-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .signalement-details-modal {
+    width:
+      calc(100vw - 20px);
+
+    max-height: 95vh;
+
+    border-radius: 14px;
+  }
+
+  .signalement-details-header {
+    flex-direction: column;
+
+    padding: 20px;
+  }
+
+  .signalement-details-header-actions {
+    width: 100%;
+  }
+
+  .signalement-details-content {
+    padding: 14px;
+  }
+
+  .signalement-details-section {
+    padding: 16px;
+  }
+
+  .signalement-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conversion-section,
+  .signalement-section-heading,
+  .section-title-row {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .signalement-note {
+    flex-direction: column;
+  }
+
+  .signalement-note button {
+    align-self: flex-end;
+  }
+
+  .signalement-photo-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,6 +16,8 @@ export interface Chantier {
   title: string;
   description: string;
   location: string;
+  latitude: number;
+  longitude: number;
   company: string;
   manager: string;
   status: ChantierStatus;

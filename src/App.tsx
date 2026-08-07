@@ -7,6 +7,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 
 import DossiersPage from "./features/dossiers/pages/DossiersPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
+import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 
 export default function App() {
   return (
@@ -28,11 +29,16 @@ export default function App() {
         />
 
         <Route
+          path="/signalements"
+          element={<SignalementsPage />}
+        />
+
+        <Route
           path="/conseil-municipal"
           element={
             <PlaceholderPage
               title="Conseil municipal"
-              description="Le module Conseil municipal sera développé prochainement."
+              description="Le module Conseil municipal sera développé ici."
             />
           }
         />
@@ -42,7 +48,7 @@ export default function App() {
           element={
             <PlaceholderPage
               title="Bâtiments"
-              description="Le module Bâtiments sera développé prochainement."
+              description="Le module Bâtiments sera développé ici."
             />
           }
         />
@@ -52,7 +58,7 @@ export default function App() {
           element={
             <PlaceholderPage
               title="Documents"
-              description="Le module Documents sera développé prochainement."
+              description="Le module Documents sera développé ici."
             />
           }
         />
@@ -62,7 +68,7 @@ export default function App() {
           element={
             <PlaceholderPage
               title="Calendrier"
-              description="Le module Calendrier sera développé prochainement."
+              description="Le module Calendrier sera développé ici."
             />
           }
         />

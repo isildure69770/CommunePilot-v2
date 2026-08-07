@@ -26,12 +26,19 @@ const emptyForm: ChantierFormValue = {
   title: "",
   description: "",
   location: "",
+
+  latitude: 45.7947,
+  longitude: 4.3155,
+
   company: "",
   manager: "",
+
   status: "À étudier",
   priority: "Normale",
+
   startDate: "",
   endDate: "",
+
   estimatedBudget: 0,
   actualCost: 0,
   progress: 0,
@@ -49,19 +56,27 @@ export default function ChantierForm({
   useEffect(() => {
     if (chantier) {
       setForm({
-        title: chantier.title,
-        description: chantier.description,
-        location: chantier.location,
-        company: chantier.company,
-        manager: chantier.manager,
-        status: chantier.status,
-        priority: chantier.priority,
-        startDate: chantier.startDate,
-        endDate: chantier.endDate,
-        estimatedBudget: chantier.estimatedBudget,
-        actualCost: chantier.actualCost,
-        progress: chantier.progress,
-      });
+  title: chantier.title,
+  description: chantier.description,
+
+  location: chantier.location,
+  latitude: chantier.latitude,
+  longitude: chantier.longitude,
+
+  company: chantier.company,
+  manager: chantier.manager,
+
+  status: chantier.status,
+  priority: chantier.priority,
+
+  startDate: chantier.startDate,
+  endDate: chantier.endDate,
+
+  estimatedBudget: chantier.estimatedBudget,
+  actualCost: chantier.actualCost,
+
+  progress: chantier.progress,
+});
     } else {
       setForm(emptyForm);
     }
@@ -193,6 +208,36 @@ export default function ChantierForm({
               required
             />
           </label>
+
+<label>
+  Latitude
+  <input
+    type="number"
+    step="0.000001"
+    value={form.latitude}
+    onChange={(event) =>
+      updateField(
+        "latitude",
+        Number(event.target.value),
+      )
+    }
+  />
+</label>
+
+<label>
+  Longitude
+  <input
+    type="number"
+    step="0.000001"
+    value={form.longitude}
+    onChange={(event) =>
+      updateField(
+        "longitude",
+        Number(event.target.value),
+      )
+    }
+  />
+</label>
 
           <label>
             Responsable

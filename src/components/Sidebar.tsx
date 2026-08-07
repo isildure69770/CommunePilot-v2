@@ -17,6 +17,11 @@ const navigationItems = [
     icon: "🛣️",
   },
   {
+    label: "Signalements",
+    path: "/signalements",
+    icon: "⚠️",
+  },
+  {
     label: "Conseil municipal",
     path: "/conseil-municipal",
     icon: "🏛️",
@@ -46,13 +51,10 @@ const navigationItems = [
 export default function Sidebar() {
   return (
     <aside className="sidebar">
-      <div className="sidebar-brand">
-        <span className="sidebar-logo">CP</span>
+      <div className="sidebar-header">
+        <h1>CommunePilot</h1>
 
-        <div>
-          <h2>CommunePilot</h2>
-          <p>Mairie de Montrottier</p>
-        </div>
+        <p>Mairie de Montrottier</p>
       </div>
 
       <nav className="sidebar-nav">
@@ -62,15 +64,22 @@ export default function Sidebar() {
             to={item.path}
             className={({ isActive }) =>
               isActive
-                ? "sidebar-link sidebar-link-active"
+                ? "sidebar-link active"
                 : "sidebar-link"
             }
           >
-            <span>{item.icon}</span>
+            <span className="sidebar-icon">
+              {item.icon}
+            </span>
+
             <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
+
+      <div className="sidebar-footer">
+        <small>CommunePilot v2</small>
+      </div>
     </aside>
   );
 }
