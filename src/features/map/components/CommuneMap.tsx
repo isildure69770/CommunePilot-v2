@@ -12,7 +12,7 @@ import L from "leaflet";
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker from "leaflet/dist/images/marker-icon.png";
 import shadow from "leaflet/dist/images/marker-shadow.png";
-
+import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBoundaryLayer";
 import MapClickHandler from "./MapClickHandler";
 
 import type {
@@ -85,7 +85,9 @@ export default function CommuneMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {onMapClick && (
+       <CommuneBoundaryLayer />
+
+{onMapClick && (
   <MapClickHandler
     onSelect={onMapClick}
   />
