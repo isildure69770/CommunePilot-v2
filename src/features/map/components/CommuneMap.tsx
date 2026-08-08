@@ -21,6 +21,7 @@ import MapLayerControls from "./MapLayerControls";
 import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBoundaryLayer";
 import RoadsLayer from "../../../reference/roads/layers/RoadsLayer";
 import HamletsLayer from "../../../reference/hamlets/layers/HamletsLayer";
+import BuildingsLayer from "../../../reference/buildings/layers/BuildingsLayer";
 
 import type {
   CommuneMapMarker,
@@ -51,11 +52,11 @@ interface CommuneMapProps {
 
   selectedPosition?: SelectedPosition | null;
 
- onMapClick?: (
-  latitude: number,
-  longitude: number,
-  location?: string,
-) => void;
+  onMapClick?: (
+    latitude: number,
+    longitude: number,
+    location?: string,
+  ) => void;
 }
 
 const DEFAULT_LATITUDE = 45.790833;
@@ -83,6 +84,11 @@ export default function CommuneMap({
   const [
     showHamlets,
     setShowHamlets,
+  ] = useState(true);
+
+  const [
+    showBuildings,
+    setShowBuildings,
   ] = useState(true);
 
   const [
@@ -120,6 +126,7 @@ export default function CommuneMap({
         showBoundary={showBoundary}
         showRoads={showRoads}
         showHamlets={showHamlets}
+        showBuildings={showBuildings}
         showSignalements={showSignalements}
         showChantiers={showChantiers}
         onToggleBoundary={() =>
@@ -136,6 +143,12 @@ export default function CommuneMap({
         }
         onToggleHamlets={() =>
           setShowHamlets(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+        onToggleBuildings={() =>
+          setShowBuildings(
             (currentValue) =>
               !currentValue,
           )
@@ -189,6 +202,10 @@ export default function CommuneMap({
             <HamletsLayer />
           )}
 
+          {showBuildings && (
+            <BuildingsLayer />
+          )}
+
           {onMapClick && (
             <MapClickHandler
               onSelect={onMapClick}
@@ -207,6 +224,13 @@ export default function CommuneMap({
                   <strong>
                     📍 Nouvel emplacement
                   </strong>
+
+                  {selectedPosition.location && (
+                    <span>
+                      Adresse :{" "}
+                      {selectedPosition.location}
+                    </span>
+                  )}
 
                   <span>
                     Cliquez sur « Créer un

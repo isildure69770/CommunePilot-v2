@@ -2,12 +2,14 @@ interface MapLayerControlsProps {
   showBoundary: boolean;
   showRoads: boolean;
   showHamlets: boolean;
+  showBuildings: boolean;
   showSignalements: boolean;
   showChantiers: boolean;
 
   onToggleBoundary: () => void;
   onToggleRoads: () => void;
   onToggleHamlets: () => void;
+  onToggleBuildings: () => void;
   onToggleSignalements: () => void;
   onToggleChantiers: () => void;
 }
@@ -16,11 +18,13 @@ export default function MapLayerControls({
   showBoundary,
   showRoads,
   showHamlets,
+  showBuildings,
   showSignalements,
   showChantiers,
   onToggleBoundary,
   onToggleRoads,
   onToggleHamlets,
+  onToggleBuildings,
   onToggleSignalements,
   onToggleChantiers,
 }: MapLayerControlsProps) {
@@ -55,6 +59,15 @@ export default function MapLayerControls({
           onChange={onToggleHamlets}
         />
         Hameaux / lieux-dits
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={showBuildings}
+          onChange={onToggleBuildings}
+        />
+        Bâtiments
       </label>
 
       <label>
