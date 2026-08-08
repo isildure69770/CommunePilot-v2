@@ -1,0 +1,673 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-08-07T23:48:01Z",
+    "timestamp_areas_base": "2026-08-07T03:28:41Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 1493316350,
+  "lat": 45.7907119,
+  "lon": 4.4663652,
+  "tags": {
+    "addr:postcode": "69770",
+    "name": "Montrottier",
+    "place": "village",
+    "population": "1386",
+    "population:date": "2021",
+    "source:population": "INSEE 2024",
+    "website": "https://www.montrottier.fr",
+    "wikidata": "Q1615583",
+    "wikipedia": "fr:Montrottier"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287922,
+  "lat": 45.8240181,
+  "lon": 4.4506207,
+  "tags": {
+    "name": "Albigny",
+    "place": "village",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287926,
+  "lat": 45.8171826,
+  "lon": 4.4484376,
+  "tags": {
+    "name": "Bonnamour",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287929,
+  "lat": 45.8217580,
+  "lon": 4.4648162,
+  "tags": {
+    "name": "Bord'Huile",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287933,
+  "lat": 45.7953683,
+  "lon": 4.4737075,
+  "tags": {
+    "name": "Chambadière",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287947,
+  "lat": 45.8323025,
+  "lon": 4.4504870,
+  "tags": {
+    "name": "Chevrolière",
+    "place": "locality",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287948,
+  "lat": 45.7824052,
+  "lon": 4.4696757,
+  "tags": {
+    "name": "L'Olivière",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287950,
+  "lat": 45.7768494,
+  "lon": 4.4739381,
+  "tags": {
+    "name": "La Beauverdière",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287951,
+  "lat": 45.7843991,
+  "lon": 4.4934218,
+  "tags": {
+    "name": "La Botte",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287954,
+  "lat": 45.7963077,
+  "lon": 4.4614892,
+  "tags": {
+    "name": "La Croix Matillon",
+    "place": "neighbourhood",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287957,
+  "lat": 45.8015765,
+  "lon": 4.4779796,
+  "tags": {
+    "name": "La Curtilla",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287961,
+  "lat": 45.7880056,
+  "lon": 4.4709790,
+  "tags": {
+    "name": "La Déserte",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287976,
+  "lat": 45.7864516,
+  "lon": 4.4900850,
+  "tags": {
+    "name": "La Farge",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287978,
+  "lat": 45.8026797,
+  "lon": 4.4840040,
+  "tags": {
+    "name": "La Grand'Cour",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287979,
+  "lat": 45.7787418,
+  "lon": 4.4512062,
+  "tags": {
+    "name": "La Guillonat",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287981,
+  "lat": 45.7860664,
+  "lon": 4.4563946,
+  "tags": {
+    "name": "La Marche",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287982,
+  "lat": 45.7785523,
+  "lon": 4.4611283,
+  "tags": {
+    "name": "La Paraudière",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287984,
+  "lat": 45.8249471,
+  "lon": 4.4354281,
+  "tags": {
+    "name": "La Parollière",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916287988,
+  "lat": 45.8186883,
+  "lon": 4.4670748,
+  "tags": {
+    "name": "La Pelleraie",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288006,
+  "lat": 45.7933694,
+  "lon": 4.4864382,
+  "tags": {
+    "name": "La Roullière",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288008,
+  "lat": 45.7894639,
+  "lon": 4.4567868,
+  "tags": {
+    "name": "Le Camus",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288010,
+  "lat": 45.8026743,
+  "lon": 4.4887407,
+  "tags": {
+    "name": "Le Coquis",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288011,
+  "lat": 45.7734582,
+  "lon": 4.4664886,
+  "tags": {
+    "name": "Le Joannon",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288015,
+  "lat": 45.8235375,
+  "lon": 4.4426926,
+  "tags": {
+    "name": "Le Michaud",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288019,
+  "lat": 45.7750389,
+  "lon": 4.4705841,
+  "tags": {
+    "name": "Le Moulin",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288023,
+  "lat": 45.8173197,
+  "lon": 4.4590467,
+  "tags": {
+    "name": "Le Pionnier",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288037,
+  "lat": 45.7879869,
+  "lon": 4.4625675,
+  "tags": {
+    "name": "Le Raty",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288038,
+  "lat": 45.7987214,
+  "lon": 4.4679449,
+  "tags": {
+    "name": "Le Renevier",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288040,
+  "lat": 45.8089539,
+  "lon": 4.4631351,
+  "tags": {
+    "name": "Le Sapine",
+    "place": "locality",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288041,
+  "lat": 45.8205723,
+  "lon": 4.4353082,
+  "tags": {
+    "name": "Le Souzy",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288042,
+  "lat": 45.7832217,
+  "lon": 4.4863215,
+  "tags": {
+    "name": "Les Bois de Montmartin",
+    "place": "locality",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288044,
+  "lat": 45.8120273,
+  "lon": 4.4521537,
+  "tags": {
+    "name": "Les Chazottes",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288049,
+  "lat": 45.7975260,
+  "lon": 4.4953293,
+  "tags": {
+    "name": "Les Fouillouses",
+    "place": "locality",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288066,
+  "lat": 45.7837356,
+  "lon": 4.4488989,
+  "tags": {
+    "name": "Les Gouttes",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288067,
+  "lat": 45.8306868,
+  "lon": 4.4440760,
+  "tags": {
+    "name": "Les Rivières",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288068,
+  "lat": 45.8078676,
+  "lon": 4.4810270,
+  "tags": {
+    "name": "Les Roches",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288070,
+  "lat": 45.7998444,
+  "lon": 4.4589725,
+  "tags": {
+    "name": "Malagoutte",
+    "place": "neighbourhood",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288071,
+  "lat": 45.7889955,
+  "lon": 4.4501469,
+  "tags": {
+    "name": "Malval",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288073,
+  "lat": 45.8121868,
+  "lon": 4.4706938,
+  "tags": {
+    "name": "Mazieux",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288076,
+  "lat": 45.8049007,
+  "lon": 4.4705043,
+  "tags": {
+    "name": "Montaly",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288096,
+  "lat": 45.7864543,
+  "lon": 4.4855116,
+  "tags": {
+    "name": "Montmartin",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288098,
+  "lat": 45.8116417,
+  "lon": 4.4765980,
+  "tags": {
+    "name": "Montu",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288099,
+  "lat": 45.7911306,
+  "lon": 4.4764587,
+  "tags": {
+    "name": "Pineteau",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288102,
+  "lat": 45.7814140,
+  "lon": 4.4772862,
+  "tags": {
+    "name": "Potu",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288103,
+  "lat": 45.8056573,
+  "lon": 4.4391788,
+  "tags": {
+    "name": "Robagny",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288106,
+  "lat": 45.7916618,
+  "lon": 4.4992802,
+  "tags": {
+    "name": "Roche-Briand",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 1916288109,
+  "lat": 45.7929059,
+  "lon": 4.4600262,
+  "tags": {
+    "name": "Saint-Martin",
+    "place": "hamlet",
+    "ref:FR:FANTOIR": "69139B053K",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012"
+  }
+},
+{
+  "type": "node",
+  "id": 3192255707,
+  "lat": 45.8269700,
+  "lon": 4.4542268,
+  "tags": {
+    "name": "Le Pavillon",
+    "place": "isolated_dwelling"
+  }
+},
+{
+  "type": "node",
+  "id": 3206473734,
+  "lat": 45.8187731,
+  "lon": 4.4426026,
+  "tags": {
+    "name": "Le Carabet",
+    "place": "isolated_dwelling"
+  }
+},
+{
+  "type": "node",
+  "id": 3206473749,
+  "lat": 45.8120122,
+  "lon": 4.4393170,
+  "tags": {
+    "name": "La Renardière",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 6213400198,
+  "lat": 45.7942275,
+  "lon": 4.4491617,
+  "tags": {
+    "name": "Montchanin",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 8048841568,
+  "lat": 45.7837556,
+  "lon": 4.4627827,
+  "tags": {
+    "name": "La Grand' Maison",
+    "place": "hamlet",
+    "source": "cadastre-dgfip-fr 2020"
+  }
+},
+{
+  "type": "node",
+  "id": 8602778985,
+  "lat": 45.8155335,
+  "lon": 4.4410731,
+  "tags": {
+    "name": "La Grand-Maison",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 10766548931,
+  "lat": 45.7696784,
+  "lon": 4.4605565,
+  "tags": {
+    "name": "Le Prou",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Finances Publiques - Cadastre. Mise à jour : 2023"
+  }
+},
+{
+  "type": "node",
+  "id": 10769549543,
+  "lat": 45.8043626,
+  "lon": 4.4483149,
+  "tags": {
+    "name": "Pontu",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Finances Publiques - Cadastre. Mise à jour : 2023"
+  }
+},
+{
+  "type": "node",
+  "id": 10769549568,
+  "lat": 45.7740787,
+  "lon": 4.4584644,
+  "tags": {
+    "name": "Le Munard",
+    "place": "hamlet",
+    "source": "cadastre-dgi-fr source : Direction Générale des Finances Publiques - Cadastre. Mise à jour : 2023"
+  }
+},
+{
+  "type": "node",
+  "id": 10769549675,
+  "lat": 45.8021338,
+  "lon": 4.4638342,
+  "tags": {
+    "name": "Les Bottières",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Finances Publiques - Cadastre. Mise à jour : 2023"
+  }
+},
+{
+  "type": "node",
+  "id": 10769549782,
+  "lat": 45.8124882,
+  "lon": 4.4572306,
+  "tags": {
+    "name": "Armont",
+    "place": "isolated_dwelling",
+    "source": "cadastre-dgi-fr source : Direction Générale des Finances Publiques - Cadastre. Mise à jour : 2023"
+  }
+},
+{
+  "type": "node",
+  "id": 11648530088,
+  "lat": 45.8206496,
+  "lon": 4.4572400,
+  "tags": {
+    "name": "Le Pionnier Nord",
+    "place": "locality"
+  }
+},
+{
+  "type": "node",
+  "id": 12588631100,
+  "lat": 45.7859702,
+  "lon": 4.4704592,
+  "tags": {
+    "name": "La Petite Olivière",
+    "place": "hamlet"
+  }
+}
+
+  ]
+}

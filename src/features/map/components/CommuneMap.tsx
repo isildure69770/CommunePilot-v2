@@ -1,5 +1,7 @@
 import "leaflet/dist/leaflet.css";
 
+import { useState } from "react";
+
 import {
   MapContainer,
   Marker,
@@ -12,8 +14,13 @@ import L from "leaflet";
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker from "leaflet/dist/images/marker-icon.png";
 import shadow from "leaflet/dist/images/marker-shadow.png";
-import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBoundaryLayer";
+
 import MapClickHandler from "./MapClickHandler";
+import MapLayerControls from "./MapLayerControls";
+
+import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBoundaryLayer";
+import RoadsLayer from "../../../reference/roads/layers/RoadsLayer";
+import HamletsLayer from "../../../reference/hamlets/layers/HamletsLayer";
 
 import type {
   CommuneMapMarker,
@@ -61,115 +68,222 @@ export default function CommuneMap({
   selectedPosition = null,
   onMapClick,
 }: CommuneMapProps) {
+  const [
+    showBoundary,
+    setShowBoundary,
+  ] = useState(true);
+
+  const [
+    showRoads,
+    setShowRoads,
+  ] = useState(true);
+
+  const [
+    showHamlets,
+    setShowHamlets,
+  ] = useState(true);
+
+  const [
+    showSignalements,
+    setShowSignalements,
+  ] = useState(true);
+
+  const [
+    showChantiers,
+    setShowChantiers,
+  ] = useState(true);
+
+  const visibleMarkers =
+    markers.filter((mapMarker) => {
+      if (
+        mapMarker.type === "signalement" &&
+        !showSignalements
+      ) {
+        return false;
+      }
+
+      if (
+        mapMarker.type === "chantier" &&
+        !showChantiers
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
   return (
-    <div
-      className="commune-map-container"
-      style={{
-        height,
-      }}
-    >
-      <MapContainer
-        center={[
-          centerLatitude,
-          centerLongitude,
-        ]}
-        zoom={zoom}
-        scrollWheelZoom
+    <div className="commune-map-wrapper">
+      <MapLayerControls
+        showBoundary={showBoundary}
+        showRoads={showRoads}
+        showHamlets={showHamlets}
+        showSignalements={showSignalements}
+        showChantiers={showChantiers}
+        onToggleBoundary={() =>
+          setShowBoundary(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+        onToggleRoads={() =>
+          setShowRoads(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+        onToggleHamlets={() =>
+          setShowHamlets(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+        onToggleSignalements={() =>
+          setShowSignalements(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+        onToggleChantiers={() =>
+          setShowChantiers(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+      />
+
+      <div
+        className="commune-map-container"
         style={{
-          width: "100%",
-          height: "100%",
+          height,
         }}
       >
-        <TileLayer
-          attribution="© OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <MapContainer
+          center={[
+            centerLatitude,
+            centerLongitude,
+          ]}
+          zoom={zoom}
+          scrollWheelZoom
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <TileLayer
+            attribution="© OpenStreetMap contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-       <CommuneBoundaryLayer />
+          {showBoundary && (
+            <CommuneBoundaryLayer />
+          )}
 
-{onMapClick && (
-  <MapClickHandler
-    onSelect={onMapClick}
-  />
-)}
-        {selectedPosition && (
-          <Marker
-            position={[
-              selectedPosition.latitude,
-              selectedPosition.longitude,
-            ]}
-          >
-            <Popup>
-              <div className="map-popup-content">
-                <strong>
-                  📍 Nouvel emplacement
-                </strong>
+          {showRoads && (
+            <RoadsLayer />
+          )}
 
-                <span>
-                  Cliquez sur « Créer un signalement »
-                  pour continuer.
-                </span>
+          {showHamlets && (
+            <HamletsLayer />
+          )}
 
-                <span>
-                  Latitude :{" "}
-                  {selectedPosition.latitude.toFixed(6)}
-                </span>
+          {onMapClick && (
+            <MapClickHandler
+              onSelect={onMapClick}
+            />
+          )}
 
-                <span>
-                  Longitude :{" "}
-                  {selectedPosition.longitude.toFixed(6)}
-                </span>
-              </div>
-            </Popup>
-          </Marker>
-        )}
+          {selectedPosition && (
+            <Marker
+              position={[
+                selectedPosition.latitude,
+                selectedPosition.longitude,
+              ]}
+            >
+              <Popup>
+                <div className="map-popup-content">
+                  <strong>
+                    📍 Nouvel emplacement
+                  </strong>
 
-        {markers.map((mapMarker) => (
-          <Marker
-            key={mapMarker.id}
-            position={[
-              mapMarker.latitude,
-              mapMarker.longitude,
-            ]}
-          >
-            <Popup>
-              <div className="map-popup-content">
-                <strong>
-                  {mapMarker.type === "chantier"
-                    ? "🚧"
-                    : "⚠️"}{" "}
-                  {mapMarker.title}
-                </strong>
+                  <span>
+                    Cliquez sur « Créer un
+                    signalement » pour continuer.
+                  </span>
 
-                <span>
-                  📍 {mapMarker.location}
-                </span>
+                  <span>
+                    Latitude :{" "}
+                    {selectedPosition.latitude.toFixed(
+                      6,
+                    )}
+                  </span>
 
-                <span>
-                  Type :{" "}
-                  {mapMarker.type === "chantier"
-                    ? "Chantier"
-                    : "Signalement"}
-                </span>
+                  <span>
+                    Longitude :{" "}
+                    {selectedPosition.longitude.toFixed(
+                      6,
+                    )}
+                  </span>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
-                <span>
-                  Statut : {mapMarker.status}
-                </span>
+          {visibleMarkers.map(
+            (mapMarker) => (
+              <Marker
+                key={mapMarker.id}
+                position={[
+                  mapMarker.latitude,
+                  mapMarker.longitude,
+                ]}
+              >
+                <Popup>
+                  <div className="map-popup-content">
+                    <strong>
+                      {mapMarker.type ===
+                      "chantier"
+                        ? "🚧"
+                        : "⚠️"}{" "}
+                      {mapMarker.title}
+                    </strong>
 
-                <span>
-                  Priorité : {mapMarker.priority}
-                </span>
+                    <span>
+                      📍 {mapMarker.location}
+                    </span>
 
-                {mapMarker.description && (
-                  <p>
-                    {mapMarker.description}
-                  </p>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+                    <span>
+                      Type :{" "}
+                      {mapMarker.type ===
+                      "chantier"
+                        ? "Chantier"
+                        : "Signalement"}
+                    </span>
+
+                    <span>
+                      Statut :{" "}
+                      {mapMarker.status}
+                    </span>
+
+                    <span>
+                      Priorité :{" "}
+                      {mapMarker.priority}
+                    </span>
+
+                    {mapMarker.description && (
+                      <p>
+                        {
+                          mapMarker.description
+                        }
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ),
+          )}
+        </MapContainer>
+      </div>
     </div>
   );
 }
