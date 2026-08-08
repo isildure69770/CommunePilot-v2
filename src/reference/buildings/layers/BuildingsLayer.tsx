@@ -114,7 +114,7 @@ export default function BuildingsLayer() {
     <GeoJSON
       data={buildings}
       style={getBuildingStyle}
-      onEachFeature={(feature, layer) => {
+       onEachFeature={(feature, layer) => {
         const properties =
           feature.properties as BuildingProperties;
 

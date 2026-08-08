@@ -10,7 +10,7 @@ import {
 } from "react-leaflet";
 
 import L from "leaflet";
-
+import AmenitiesLayer from "../../../reference/amenities/layers/AmenitiesLayer";
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker from "leaflet/dist/images/marker-icon.png";
 import shadow from "leaflet/dist/images/marker-shadow.png";
@@ -91,6 +91,11 @@ export default function CommuneMap({
     setShowBuildings,
   ] = useState(true);
 
+const [
+  showAmenities,
+  setShowAmenities,
+] = useState(true);
+
   const [
     showSignalements,
     setShowSignalements,
@@ -123,12 +128,14 @@ export default function CommuneMap({
   return (
     <div className="commune-map-wrapper">
       <MapLayerControls
-        showBoundary={showBoundary}
-        showRoads={showRoads}
-        showHamlets={showHamlets}
-        showBuildings={showBuildings}
-        showSignalements={showSignalements}
-        showChantiers={showChantiers}
+  showBoundary={showBoundary}
+  showRoads={showRoads}
+  showHamlets={showHamlets}
+  showBuildings={showBuildings}
+  showAmenities={showAmenities}
+  showSignalements={showSignalements}
+  showChantiers={showChantiers}
+
         onToggleBoundary={() =>
           setShowBoundary(
             (currentValue) =>
@@ -153,6 +160,12 @@ export default function CommuneMap({
               !currentValue,
           )
         }
+        onToggleAmenities={() =>
+  setShowAmenities(
+    (currentValue) =>
+      !currentValue,
+  )
+}
         onToggleSignalements={() =>
           setShowSignalements(
             (currentValue) =>
@@ -205,6 +218,10 @@ export default function CommuneMap({
           {showBuildings && (
             <BuildingsLayer />
           )}
+
+{showAmenities && (
+  <AmenitiesLayer />
+)}
 
           {onMapClick && (
             <MapClickHandler

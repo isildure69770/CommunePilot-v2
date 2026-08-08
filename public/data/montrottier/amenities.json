@@ -1,0 +1,682 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-05-06T03:25:00Z",
+    "timestamp_areas_base": "2026-05-06T03:25:00Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 2021425650,
+  "lat": 45.7918289,
+  "lon": 4.4646201,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 3172228994,
+  "lat": 45.8239173,
+  "lon": 4.4509961,
+  "tags": {
+    "amenity": "recycling",
+    "recycling:glass": "yes",
+    "recycling:paper": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3377876636,
+  "lat": 45.8243833,
+  "lon": 4.4507759,
+  "tags": {
+    "amenity": "post_box",
+    "operator": "La Poste",
+    "operator:wikidata": "Q373724",
+    "ref": "A4A7F8",
+    "source": "data.gouv.fr:LaPoste - 05/2016"
+  }
+},
+{
+  "type": "node",
+  "id": 5500282343,
+  "lat": 45.7900627,
+  "lon": 4.4666410,
+  "tags": {
+    "addr:city": "Montrottier",
+    "addr:postcode": "69770",
+    "addr:street": "Place du Centre",
+    "amenity": "doctors",
+    "healthcare": "doctor",
+    "healthcare:speciality": "osteopathy",
+    "name": "Ostéopathe",
+    "opening_hours": "Mo-Fr 09:00-19:00; Sa 09:00-12:00",
+    "operator": "Rouquier Puech"
+  }
+},
+{
+  "type": "node",
+  "id": 5927195311,
+  "lat": 45.7900455,
+  "lon": 4.4662948,
+  "tags": {
+    "amenity": "townhall",
+    "email": "mairie@montrottier.fr",
+    "fax": "+33474702039",
+    "name": "Mairie de Montrottier",
+    "opening_hours": "Tu 09:00-12:00,13:30-17:30; Th 09:00-12:00; Fr 09:00-12:00,13:30-16:30; Sa 10:00-12:00",
+    "phone": "+33474701307",
+    "ref:FR:SIRET": "21690139700010",
+    "source": "Service-Public.fr - 03/2025",
+    "website": "https://www.montrottier.fr",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5927195312,
+  "lat": 45.7899593,
+  "lon": 4.4669469,
+  "tags": {
+    "amenity": "pharmacy",
+    "dispensing": "yes",
+    "name": "Pharmacie Cuny",
+    "ref:FR:FINESS": "690010954",
+    "source": "Le ministère des solidarités et de la santé - 08/2018"
+  }
+},
+{
+  "type": "node",
+  "id": 6076329939,
+  "lat": 45.7901543,
+  "lon": 4.4664318,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Bar-Restaurant du Centre Lesiz",
+    "phone": "+33469675310"
+  }
+},
+{
+  "type": "node",
+  "id": 6076329940,
+  "lat": 45.7907017,
+  "lon": 4.4656547,
+  "tags": {
+    "amenity": "library",
+    "name": "Bibliothèque municipale",
+    "opening_hours": "Tu 15:30-17:30; We 15:00-17:00; Fr 17:00-19:00; Sa 10:00-12:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6076329941,
+  "lat": 45.7905937,
+  "lon": 4.4654082,
+  "tags": {
+    "amenity": "cinema",
+    "name": "Ciné Montrottier"
+  }
+},
+{
+  "type": "node",
+  "id": 6076338784,
+  "lat": 45.7906822,
+  "lon": 4.4658185,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Bar-Restaurant Le Montrottier",
+    "phone": "+33478647896"
+  }
+},
+{
+  "type": "node",
+  "id": 8702364557,
+  "lat": 45.7913487,
+  "lon": 4.4654173,
+  "tags": {
+    "amenity": "post_box"
+  }
+},
+{
+  "type": "node",
+  "id": 8702364558,
+  "lat": 45.7913641,
+  "lon": 4.4653549,
+  "tags": {
+    "amenity": "post_office",
+    "brand": "La Poste",
+    "brand:wikipedia": "fr:La Poste (entreprise française)",
+    "name": "La Poste",
+    "opening_hours": "Mo,We,Sa 07:00-12:15; Tu,Th-Fr 07:00-12:15,15:00-19:00; Su 07:30-12:15; PH off; 2024 May 19 07:30-12:15; 2024 May 20 off",
+    "post_office": "post_partner",
+    "ref:FR:LaPoste": "13091D",
+    "source": "LaPoste - 2021-04",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 9346033109,
+  "lat": 45.7904710,
+  "lon": 4.4670655,
+  "tags": {
+    "amenity": "parking",
+    "capacity": "14",
+    "parking": "surface"
+  }
+},
+{
+  "type": "node",
+  "id": 9346033110,
+  "lat": 45.7900040,
+  "lon": 4.4667391,
+  "tags": {
+    "amenity": "parking",
+    "capacity": "8",
+    "capacity:disabled": "0",
+    "fee": "no",
+    "maxstay": "2 hours",
+    "parking": "surface"
+  }
+},
+{
+  "type": "node",
+  "id": 9346099472,
+  "lat": 45.7892001,
+  "lon": 4.4694905,
+  "tags": {
+    "amenity": "vending_machine",
+    "vending": "fuel"
+  }
+},
+{
+  "type": "node",
+  "id": 9346101259,
+  "lat": 45.7907431,
+  "lon": 4.4656211,
+  "tags": {
+    "amenity": "bicycle_parking",
+    "capacity": "4",
+    "covered": "no",
+    "fee": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 9346116967,
+  "lat": 45.7900058,
+  "lon": 4.4664461,
+  "tags": {
+    "amenity": "post_box"
+  }
+},
+{
+  "type": "node",
+  "id": 9346116969,
+  "lat": 45.7900836,
+  "lon": 4.4662764,
+  "tags": {
+    "amenity": "public_bookcase",
+    "check_date": "2024-08-25",
+    "wikimedia_commons": "File:Montrottier_-_mairie_-_boîte_à_livres.jpg"
+  }
+},
+{
+  "type": "node",
+  "id": 9346123765,
+  "lat": 45.7908072,
+  "lon": 4.4654752,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "wood"
+  }
+},
+{
+  "type": "node",
+  "id": 9346125701,
+  "lat": 45.7919333,
+  "lon": 4.4654517,
+  "tags": {
+    "amenity": "recycling",
+    "recycling:cardboard": "yes",
+    "recycling:glass": "yes",
+    "recycling:paper": "yes",
+    "recycling_type": "container"
+  }
+},
+{
+  "type": "node",
+  "id": 9346125702,
+  "lat": 45.7922950,
+  "lon": 4.4659848,
+  "tags": {
+    "amenity": "recycling"
+  }
+},
+{
+  "type": "node",
+  "id": 9346125703,
+  "lat": 45.7922892,
+  "lon": 4.4659885,
+  "tags": {
+    "amenity": "waste_disposal"
+  }
+},
+{
+  "type": "node",
+  "id": 9346126966,
+  "lat": 45.7905765,
+  "lon": 4.4653607,
+  "tags": {
+    "amenity": "kindergarten",
+    "name": "La farandole"
+  }
+},
+{
+  "type": "node",
+  "id": 9346127283,
+  "lat": 45.7907262,
+  "lon": 4.4654171,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "wood"
+  }
+},
+{
+  "type": "node",
+  "id": 9346127284,
+  "lat": 45.7907454,
+  "lon": 4.4653838,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "wood"
+  }
+},
+{
+  "type": "node",
+  "id": 9346149802,
+  "lat": 45.7912884,
+  "lon": 4.4666365,
+  "tags": {
+    "access": "yes",
+    "amenity": "charging_station",
+    "capacity": "2"
+  }
+},
+{
+  "type": "node",
+  "id": 9346152592,
+  "lat": 45.7906212,
+  "lon": 4.4654174,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 9346152593,
+  "lat": 45.7906575,
+  "lon": 4.4653389,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 9346152594,
+  "lat": 45.7910647,
+  "lon": 4.4656031,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 9346152595,
+  "lat": 45.7913662,
+  "lon": 4.4654188,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 9346152596,
+  "lat": 45.7904399,
+  "lon": 4.4659673,
+  "tags": {
+    "amenity": "waste_basket"
+  }
+},
+{
+  "type": "node",
+  "id": 9346189499,
+  "lat": 45.7900970,
+  "lon": 4.4665954,
+  "tags": {
+    "access": "yes",
+    "amenity": "drinking_water"
+  }
+},
+{
+  "type": "node",
+  "id": 12295760658,
+  "lat": 45.7915500,
+  "lon": 4.4461900,
+  "tags": {
+    "amenity": "public_bookcase",
+    "check_date": "2024-10-22",
+    "description": "Juste à côté de l'entrée de la société Eaton",
+    "opening_hours": "24/7",
+    "wikimedia_commons": "File:Montrottier_-_société_eaton_-_boîte_à_livres.jpg"
+  }
+},
+{
+  "type": "node",
+  "id": 13359826916,
+  "lat": 45.7799454,
+  "lon": 4.4613250,
+  "tags": {
+    "amenity": "school",
+    "contact:phone": "+33 474701326",
+    "name": "École secondaire privée La Péraudière",
+    "operator:type": "private",
+    "ref:FR:SIRET": "77970942700024",
+    "ref:UAI": "0690610N",
+    "school:FR": "collège",
+    "source": "Ministère de l'Éducation nationale, de l'Enseignement supérieur et de la Recherche - 2025-11",
+    "start_date": "1954-09-17"
+  }
+},
+{
+  "type": "way",
+  "id": 181167620,
+  "center": {
+    "lat": 45.7906265,
+    "lon": 4.4672080
+  },
+  "tags": {
+    "amenity": "place_of_worship",
+    "building": "church",
+    "denomination": "catholic",
+    "name": "Église Saint-Sulpice",
+    "religion": "christian",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012",
+    "wikidata": "Q41794865"
+  }
+},
+{
+  "type": "way",
+  "id": 181172718,
+  "center": {
+    "lat": 45.8243400,
+    "lon": 4.4503975
+  },
+  "tags": {
+    "amenity": "place_of_worship",
+    "building": "church",
+    "denomination": "catholic",
+    "name": "Église Saint-Jean Baptiste",
+    "religion": "christian",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012",
+    "wikidata": "Q119816830"
+  }
+},
+{
+  "type": "way",
+  "id": 181173043,
+  "center": {
+    "lat": 45.8198548,
+    "lon": 4.4363834
+  },
+  "tags": {
+    "amenity": "place_of_worship",
+    "building": "chapel",
+    "denomination": "catholic",
+    "name": "Chapelle Saint-Antoine",
+    "religion": "christian",
+    "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2012",
+    "wikidata": "Q60365250"
+  }
+},
+{
+  "type": "way",
+  "id": 191557975,
+  "center": {
+    "lat": 45.7911604,
+    "lon": 4.4447456
+  },
+  "tags": {
+    "amenity": "parking",
+    "parking": "surface",
+    "source": "BDOrtho IGN 2020"
+  }
+},
+{
+  "type": "way",
+  "id": 191557985,
+  "center": {
+    "lat": 45.7929091,
+    "lon": 4.4455120
+  },
+  "tags": {
+    "amenity": "parking"
+  }
+},
+{
+  "type": "way",
+  "id": 191557987,
+  "center": {
+    "lat": 45.7923232,
+    "lon": 4.4442675
+  },
+  "tags": {
+    "access": "private",
+    "amenity": "parking",
+    "operator": "Eaton",
+    "parking": "surface"
+  }
+},
+{
+  "type": "way",
+  "id": 191558013,
+  "center": {
+    "lat": 45.7912914,
+    "lon": 4.4459732
+  },
+  "tags": {
+    "access": "private",
+    "amenity": "parking",
+    "fee": "no",
+    "parking": "surface",
+    "source": "BDOrtho IGN 2020"
+  }
+},
+{
+  "type": "way",
+  "id": 314441430,
+  "center": {
+    "lat": 45.8246819,
+    "lon": 4.4500299
+  },
+  "tags": {
+    "amenity": "grave_yard",
+    "religion": "christian",
+    "wikidata": "Q83191387"
+  }
+},
+{
+  "type": "way",
+  "id": 314441433,
+  "center": {
+    "lat": 45.8240077,
+    "lon": 4.4509191
+  },
+  "tags": {
+    "amenity": "parking",
+    "capacity": "8"
+  }
+},
+{
+  "type": "way",
+  "id": 627846473,
+  "center": {
+    "lat": 45.7898657,
+    "lon": 4.4661214
+  },
+  "tags": {
+    "access": "yes",
+    "amenity": "parking",
+    "capacity": "9",
+    "capacity:disabled": "1",
+    "name": "Place du Champ de Mars",
+    "operator": "commune",
+    "operator:type": "public",
+    "parking": "surface"
+  }
+},
+{
+  "type": "way",
+  "id": 847191148,
+  "center": {
+    "lat": 45.7798374,
+    "lon": 4.4619302
+  },
+  "tags": {
+    "addr:city": "Montrottier",
+    "addr:housenumber": "3209",
+    "addr:postcode": "69770",
+    "addr:street": "Route de Saint-Martin",
+    "amenity": "school",
+    "denomination": "roman_catholic",
+    "email": "ecole@peraudiere.com",
+    "isced:level:2011": "1;2",
+    "name": "École de la Péraudière",
+    "operator:type": "private",
+    "phone": "+33 4 74 70 13 26",
+    "phone_1": "+33 4 74 70 14 27",
+    "religion": "christian",
+    "school:FR": "primaire;secondaire",
+    "school:gender": "male",
+    "website": "https://laperaudiere.com/"
+  }
+},
+{
+  "type": "way",
+  "id": 864179936,
+  "center": {
+    "lat": 45.7887086,
+    "lon": 4.4454360
+  },
+  "tags": {
+    "amenity": "recycling",
+    "name": "Déchèterie Montrottier",
+    "operator": "Communauté de communes des Monts du Lyonnais",
+    "phone": "+33474705800",
+    "recycling_type": "centre",
+    "ref:FR:SINOE": "43121",
+    "source": "BDOrtho IGN 2020",
+    "start_date": "2004-09-20"
+  }
+},
+{
+  "type": "way",
+  "id": 1013537947,
+  "center": {
+    "lat": 45.7802349,
+    "lon": 4.4611386
+  },
+  "tags": {
+    "addr:city": "Montrottier",
+    "addr:housenumber": "3209",
+    "addr:postcode": "69770",
+    "addr:street": "Route de Saint-Martin",
+    "amenity": "place_of_worship",
+    "building": "yes",
+    "building:part": "chapel",
+    "denomination": "roman_catholic",
+    "email": "ecole@peraudiere.com",
+    "name": "Chappelle de l'École de la Péraudière",
+    "operator": "Capucins de Morgon",
+    "phone": "+33 4 74 70 13 26;+33 4 74 70 14 27",
+    "religion": "christian",
+    "website": "https://laperaudiere.com/"
+  }
+},
+{
+  "type": "way",
+  "id": 1077972782,
+  "center": {
+    "lat": 45.7986491,
+    "lon": 4.4517005
+  },
+  "tags": {
+    "amenity": "car_pooling",
+    "capacity": "20",
+    "lit": "no",
+    "name": "Aire de covoiturage de la Croix du Fol"
+  }
+},
+{
+  "type": "way",
+  "id": 1314073570,
+  "center": {
+    "lat": 45.7909471,
+    "lon": 4.4652912
+  },
+  "tags": {
+    "amenity": "parking",
+    "name": "Place des Cèdres"
+  }
+},
+{
+  "type": "way",
+  "id": 1456719691,
+  "center": {
+    "lat": 45.7904049,
+    "lon": 4.4649096
+  },
+  "tags": {
+    "amenity": "school",
+    "contact:email": "ce.0691348R@ac-lyon.fr",
+    "contact:phone": "+33 474701502",
+    "grades": "3 - 11",
+    "name": "E.PU Montrottier",
+    "operator:type": "public",
+    "ref:FR:SIRET": "21690139700036",
+    "ref:UAI": "0691348R",
+    "school:FR": "primaire",
+    "source": "Ministère de l'Éducation nationale, de l'Enseignement supérieur et de la Recherche - 2025-11",
+    "start_date": "1966-10-14"
+  }
+},
+{
+  "type": "way",
+  "id": 1456719694,
+  "center": {
+    "lat": 45.7918623,
+    "lon": 4.4670154
+  },
+  "tags": {
+    "amenity": "school",
+    "contact:email": "ce.0691906X@ac-lyon.fr",
+    "contact:phone": "+33 474701712",
+    "name": "École primaire privée Saint-Joseph",
+    "operator:type": "private",
+    "ref:FR:SIRET": "77970941900013",
+    "ref:UAI": "0691906X",
+    "school:FR": "primaire",
+    "source": "Ministère de l'Éducation nationale, de l'Enseignement supérieur et de la Recherche - 2025-11",
+    "start_date": "1967-04-28"
+  }
+}
+
+  ]
+}

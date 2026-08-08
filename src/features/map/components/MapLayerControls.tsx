@@ -3,6 +3,7 @@ interface MapLayerControlsProps {
   showRoads: boolean;
   showHamlets: boolean;
   showBuildings: boolean;
+  showAmenities: boolean;
   showSignalements: boolean;
   showChantiers: boolean;
 
@@ -10,6 +11,7 @@ interface MapLayerControlsProps {
   onToggleRoads: () => void;
   onToggleHamlets: () => void;
   onToggleBuildings: () => void;
+  onToggleAmenities: () => void;
   onToggleSignalements: () => void;
   onToggleChantiers: () => void;
 }
@@ -19,12 +21,14 @@ export default function MapLayerControls({
   showRoads,
   showHamlets,
   showBuildings,
+  showAmenities,
   showSignalements,
   showChantiers,
   onToggleBoundary,
   onToggleRoads,
   onToggleHamlets,
   onToggleBuildings,
+  onToggleAmenities,
   onToggleSignalements,
   onToggleChantiers,
 }: MapLayerControlsProps) {
@@ -68,6 +72,15 @@ export default function MapLayerControls({
           onChange={onToggleBuildings}
         />
         Bâtiments
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={showAmenities}
+          onChange={onToggleAmenities}
+        />
+        Équipements communaux
       </label>
 
       <label>
