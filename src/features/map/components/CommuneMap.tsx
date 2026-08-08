@@ -37,6 +37,7 @@ L.Icon.Default.mergeOptions({
 interface SelectedPosition {
   latitude: number;
   longitude: number;
+  location?: string;
 }
 
 interface CommuneMapProps {
@@ -50,10 +51,11 @@ interface CommuneMapProps {
 
   selectedPosition?: SelectedPosition | null;
 
-  onMapClick?: (
-    latitude: number,
-    longitude: number,
-  ) => void;
+ onMapClick?: (
+  latitude: number,
+  longitude: number,
+  location?: string,
+) => void;
 }
 
 const DEFAULT_LATITUDE = 45.790833;

@@ -21,6 +21,7 @@ type SignalementFormValue = Omit<
 interface InitialPosition {
   latitude: number;
   longitude: number;
+  location?: string;
 }
 
 interface SignalementFormProps {
@@ -83,16 +84,19 @@ export default function SignalementForm({
       });
     } else {
   setForm({
-    ...emptyForm,
+  ...emptyForm,
 
-    latitude:
-      initialPosition?.latitude ??
-      DEFAULT_LATITUDE,
+  latitude:
+    initialPosition?.latitude ??
+    DEFAULT_LATITUDE,
 
-    longitude:
-      initialPosition?.longitude ??
-      DEFAULT_LONGITUDE,
-  });
+  longitude:
+    initialPosition?.longitude ??
+    DEFAULT_LONGITUDE,
+
+  location:
+    initialPosition?.location ?? "",
+});
 }
   }, [
   signalement,

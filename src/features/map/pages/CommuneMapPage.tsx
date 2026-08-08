@@ -19,6 +19,7 @@ import type {
 interface SelectedPosition {
   latitude: number;
   longitude: number;
+  location?: string;
 }
 
 export default function CommuneMapPage() {
@@ -47,10 +48,12 @@ export default function CommuneMapPage() {
   function handleMapClick(
     latitude: number,
     longitude: number,
+    location?: string,
   ) {
     setSelectedPosition({
       latitude,
       longitude,
+      location,
     });
   }
 
@@ -82,11 +85,6 @@ export default function CommuneMapPage() {
     setIsSignalementFormOpen(false);
     setSelectedPosition(null);
 
-    /*
-     * useSignalements sauvegarde dans localStorage.
-     * On laisse React terminer la mise à jour avant
-     * de relire les données de la carte.
-     */
     window.setTimeout(() => {
       refresh();
     }, 50);
@@ -122,43 +120,23 @@ export default function CommuneMapPage() {
 
       <div className="commune-map-statistics">
         <article>
-          <span>
-            Total
-          </span>
-
-          <strong>
-            {statistics.total}
-          </strong>
+          <span>Total</span>
+          <strong>{statistics.total}</strong>
         </article>
 
         <article>
-          <span>
-            Chantiers
-          </span>
-
-          <strong>
-            {statistics.chantiers}
-          </strong>
+          <span>Chantiers</span>
+          <strong>{statistics.chantiers}</strong>
         </article>
 
         <article>
-          <span>
-            Signalements
-          </span>
-
-          <strong>
-            {statistics.signalements}
-          </strong>
+          <span>Signalements</span>
+          <strong>{statistics.signalements}</strong>
         </article>
 
         <article>
-          <span>
-            Urgents
-          </span>
-
-          <strong>
-            {statistics.urgents}
-          </strong>
+          <span>Urgents</span>
+          <strong>{statistics.urgents}</strong>
         </article>
       </div>
 
@@ -180,6 +158,13 @@ export default function CommuneMapPage() {
             <strong>
               📍 Emplacement sélectionné
             </strong>
+
+            {selectedPosition.location && (
+              <span>
+                Adresse :{" "}
+                {selectedPosition.location}
+              </span>
+            )}
 
             <span>
               Latitude :{" "}
