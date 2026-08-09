@@ -1,4 +1,8 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
 import MainLayout from "./layout/MainLayout";
 
@@ -9,6 +13,7 @@ import DossiersPage from "./features/dossiers/pages/DossiersPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 import CommuneMapPage from "./features/map/pages/CommuneMapPage";
+import EquipmentDetailPage from "./features/equipments/pages/EquipmentDetailPage";
 
 export default function App() {
   return (
@@ -37,6 +42,11 @@ export default function App() {
         <Route
           path="/carte"
           element={<CommuneMapPage />}
+        />
+
+        <Route
+          path="/equipments/:id"
+          element={<EquipmentDetailPage />}
         />
 
         <Route
@@ -92,12 +102,22 @@ export default function App() {
 
       <Route
         path="/"
-        element={<Navigate to="/dashboard" replace />}
+        element={
+          <Navigate
+            to="/dashboard"
+            replace
+          />
+        }
       />
 
       <Route
         path="*"
-        element={<Navigate to="/dashboard" replace />}
+        element={
+          <Navigate
+            to="/dashboard"
+            replace
+          />
+        }
       />
     </Routes>
   );

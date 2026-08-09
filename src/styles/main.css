@@ -1787,3 +1787,150 @@ body{
     justify-content: flex-end;
   }
 }
+
+/* =========================================================
+   FICHE ÉQUIPEMENT
+   ========================================================= */
+
+.equipment-detail-page {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+}
+
+.equipment-detail-page .page-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.equipment-detail-page .page-heading h2 {
+    margin: 6px 0 6px;
+    font-size: 32px;
+    line-height: 1.15;
+    color: #1f2937;
+}
+
+.equipment-detail-page .page-heading p {
+    color: #64748b;
+    font-size: 16px;
+}
+
+.equipment-detail-page .eyebrow {
+    display: block;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.equipment-detail-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+.equipment-detail-card h3 {
+    margin: 0 0 18px;
+    font-size: 19px;
+    color: #16365d;
+}
+
+.equipment-detail-card p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.equipment-detail-card textarea {
+    display: block;
+    width: 100%;
+    min-height: 150px;
+    padding: 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #1f2937;
+    font: inherit;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.equipment-detail-card textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.equipment-detail-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.equipment-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.equipment-photo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.equipment-photo-card img {
+    display: block;
+    width: 100% !important;
+    max-width: none !important;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px !important;
+}
+
+.equipment-detail-page .primary-button,
+.equipment-detail-page .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    .equipment-detail-page {
+        padding: 20px;
+    }
+
+    .equipment-detail-page .page-heading {
+        flex-direction: column;
+    }
+
+    .equipment-detail-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .equipment-detail-actions button {
+        width: 100%;
+    }
+}
+

@@ -18,6 +18,12 @@ interface AmenityProperties {
   osm_id?: number;
   name?: string;
   amenity?: string;
+  building?: string;
+  historic?: string;
+  heritage?: string;
+  ref_mhs?: string;
+  start_date?: string;
+  wikidata?: string;
 }
 
 function translateAmenity(
@@ -29,6 +35,12 @@ function translateAmenity(
 
     case "school":
       return "École";
+
+      case "historic_building":
+  return "Bâtiment historique";
+
+    case "public_building":
+    return "Bâtiment public";
 
     case "kindergarten":
       return "École maternelle";
@@ -72,6 +84,12 @@ function getAmenityIcon(
     case "school":
     case "kindergarten":
       return "🏫";
+
+case "historic_building":
+  return "🏛️";
+
+case "public_building":
+  return "🏢";
 
     case "library":
       return "📚";
@@ -187,15 +205,61 @@ export default function AmenitiesLayer() {
           },
         );
 
-        marker.bindPopup(`
-          <div>
-            <strong>
-              ${icon} ${name}
-            </strong>
-            <br />
-            Type : ${amenity}
-          </div>
-        `);
+      
+
+const heritageInfo = [
+  properties?.historic
+    ? `Historique : ${properties.historic}`
+    : null,
+
+  properties?.heritage
+    ? `Protection patrimoniale : ${properties.heritage}`
+    : null,
+
+  properties?.ref_mhs
+    ? `Référence Monument historique : ${properties.ref_mhs}`
+    : null,
+
+  properties?.start_date
+    ? `Datation : ${properties.start_date}`
+    : null,
+]
+  .filter(Boolean)
+  .join("<br />");
+
+marker.bindPopup(`
+  <div>
+    <strong>
+      ${icon} ${name}
+    </strong>
+
+    <br />
+    Type : ${amenity}
+
+    ${
+      heritageInfo
+        ? `<br /><br />${heritageInfo}`
+        : ""
+    }
+
+    <br /><br />
+
+    <a
+      href="/equipments/${properties?.osm_id ?? 0}"
+      style="
+        display:inline-block;
+        padding:6px 10px;
+        border-radius:6px;
+        background:#16365d;
+        color:white;
+        text-decoration:none;
+        font-weight:600;
+      "
+    >
+      Ouvrir la fiche
+    </a>
+  </div>
+`);
 
         return marker;
       }}
