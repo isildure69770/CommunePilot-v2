@@ -79,32 +79,42 @@ export default function CommuneMap({
   const [
     showRoads,
     setShowRoads,
-  ] = useState(true);
+  ] = useState(false);
 
   const [
     showHamlets,
     setShowHamlets,
-  ] = useState(true);
+  ] = useState(false);
 
   const [
     showBuildings,
     setShowBuildings,
-  ] = useState(true);
+  ] = useState(false);
 
 const [
   showAmenities,
   setShowAmenities,
-] = useState(true);
+] = useState(false);
 
   const [
     showSignalements,
     setShowSignalements,
-  ] = useState(true);
+  ] = useState(false);
 
   const [
     showChantiers,
     setShowChantiers,
-  ] = useState(true);
+  ] = useState(false);
+
+  function resetToBoundaryOnly() {
+    setShowBoundary(true);
+    setShowRoads(false);
+    setShowHamlets(false);
+    setShowBuildings(false);
+    setShowAmenities(false);
+    setShowSignalements(false);
+    setShowChantiers(false);
+  }
 
   const visibleMarkers =
     markers.filter((mapMarker) => {
@@ -178,6 +188,7 @@ const [
               !currentValue,
           )
         }
+        onReset={resetToBoundaryOnly}
       />
 
       <div

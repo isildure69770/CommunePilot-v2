@@ -27,6 +27,25 @@ import {
   saveEquipmentPhotos,
 } from "../services/equipmentPhotos";
 
+import {
+  deleteEquipmentDocument,
+  getEquipmentDocuments,
+  saveEquipmentDocuments,
+} from "../services/equipmentDocuments";
+
+import type {
+  EquipmentDocument,
+} from "../services/equipmentDocuments";
+
+import {
+  getEquipmentInterventions,
+  saveEquipmentInterventions,
+} from "../services/equipmentInterventions";
+
+import type {
+  EquipmentIntervention,
+} from "../services/equipmentInterventions";
+
 interface AmenityProperties {
   osm_id?: number;
   name?: string;
@@ -40,6 +59,11 @@ interface EquipmentData {
   latitude: number;
   longitude: number;
 }
+
+type InterventionStatus =
+  | "Prévue"
+  | "En cours"
+  | "Terminée";
 
 function translateAmenity(
   value?: string,
@@ -89,6 +113,25 @@ function translateAmenity(
   }
 }
 
+function formatFileSize(
+  size: number,
+) {
+  if (size < 1024) {
+    return `${size} octets`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(
+      size / 1024
+    ).toFixed(1)} Ko`;
+  }
+
+  return `${(
+    size /
+    (1024 * 1024)
+  ).toFixed(1)} Mo`;
+}
+
 export default function EquipmentDetailPage() {
   const {
     id,
@@ -120,6 +163,45 @@ export default function EquipmentDetailPage() {
     photos,
     setPhotos,
   ] = useState<string[]>([]);
+
+  const [
+    documents,
+    setDocuments,
+  ] = useState<EquipmentDocument[]>([]);
+
+  const [
+    interventions,
+    setInterventions,
+  ] = useState<EquipmentIntervention[]>([]);
+
+  const [
+    interventionTitle,
+    setInterventionTitle,
+  ] = useState("");
+
+  const [
+    interventionDescription,
+    setInterventionDescription,
+  ] = useState("");
+
+  const [
+    interventionDate,
+    setInterventionDate,
+  ] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+
+  const [
+    interventionStatus,
+    setInterventionStatus,
+  ] = useState<InterventionStatus>(
+    "Prévue",
+  );
+
+  const [
+    showInterventionForm,
+    setShowInterventionForm,
+  ] = useState(false);
 
   useEffect(() => {
     async function loadEquipment() {
@@ -187,6 +269,18 @@ export default function EquipmentDetailPage() {
 
         setPhotos(
           getEquipmentPhotos(
+            String(osmId),
+          ),
+        );
+
+        setDocuments(
+          getEquipmentDocuments(
+            String(osmId),
+          ),
+        );
+
+        setInterventions(
+          getEquipmentInterventions(
             String(osmId),
           ),
         );
@@ -282,6 +376,145 @@ export default function EquipmentDetailPage() {
     saveEquipmentPhotos(
       String(equipment.id),
       nextPhotos,
+    );
+  }
+
+  function handleDocumentChange(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    if (!equipment) {
+      return;
+    }
+
+    const file =
+      event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader =
+      new FileReader();
+
+    reader.onload = () => {
+      if (
+        typeof reader.result !== "string"
+      ) {
+        return;
+      }
+
+      const newDocument: EquipmentDocument = {
+        id: `${Date.now()}-${file.name}`,
+        name: file.name,
+        type:
+          file.type ||
+          "application/octet-stream",
+        size: file.size,
+        dataUrl: reader.result,
+        addedAt:
+          new Date().toISOString(),
+      };
+
+      const nextDocuments = [
+        ...documents,
+        newDocument,
+      ];
+
+      setDocuments(
+        nextDocuments,
+      );
+
+      saveEquipmentDocuments(
+        String(equipment.id),
+        nextDocuments,
+      );
+
+      event.target.value = "";
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function handleDeleteDocument(
+    documentId: string,
+  ) {
+    if (!equipment) {
+      return;
+    }
+
+    const nextDocuments =
+      deleteEquipmentDocument(
+        String(equipment.id),
+        documentId,
+      );
+
+    setDocuments(
+      nextDocuments,
+    );
+  }
+
+  function handleCreateIntervention() {
+    if (!equipment) {
+      return;
+    }
+
+    if (!interventionTitle.trim()) {
+      return;
+    }
+
+    const newIntervention: EquipmentIntervention = {
+      id: `${Date.now()}`,
+      title: interventionTitle.trim(),
+      description:
+        interventionDescription.trim(),
+      date: interventionDate,
+      status: interventionStatus,
+    };
+
+    const nextInterventions = [
+      newIntervention,
+      ...interventions,
+    ];
+
+    setInterventions(
+      nextInterventions,
+    );
+
+    saveEquipmentInterventions(
+      String(equipment.id),
+      nextInterventions,
+    );
+
+    setInterventionTitle("");
+    setInterventionDescription("");
+    setInterventionDate(
+      new Date().toISOString().slice(0, 10),
+    );
+    setInterventionStatus("Prévue");
+    setShowInterventionForm(false);
+  }
+
+  function handleDeleteIntervention(
+    interventionId: string,
+  ) {
+    if (!equipment) {
+      return;
+    }
+
+    const nextInterventions =
+      interventions.filter(
+        (intervention) =>
+          intervention.id !==
+          interventionId,
+      );
+
+    setInterventions(
+      nextInterventions,
+    );
+
+    saveEquipmentInterventions(
+      String(equipment.id),
+      nextInterventions,
     );
   }
 
@@ -445,11 +678,6 @@ export default function EquipmentDetailPage() {
                   <img
                     src={photo}
                     alt={`${equipment.name} - photo ${index + 1}`}
-                    style={{
-                      width: "100%",
-                      maxWidth: "320px",
-                      borderRadius: "8px",
-                    }}
                   />
 
                   <button
@@ -472,24 +700,253 @@ export default function EquipmentDetailPage() {
 
       <div className="equipment-detail-card">
         <h3>
-          Gestion
+          Documents
         </h3>
 
-        <div className="equipment-detail-actions">
-          <button
-            className="secondary-button"
-            type="button"
-          >
-            Ajouter un document
-          </button>
+        <label className="secondary-button">
+          Ajouter un document
 
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.odt,.ods,.txt,image/*"
+            onChange={handleDocumentChange}
+            style={{
+              display: "none",
+            }}
+          />
+        </label>
+
+        {documents.length === 0 ? (
+          <p>
+            Aucun document enregistré.
+          </p>
+        ) : (
+          <div className="equipment-document-list">
+            {documents.map(
+              (document) => (
+                <div
+                  className="equipment-document-card"
+                  key={document.id}
+                >
+                  <div>
+                    <strong>
+                      📄 {document.name}
+                    </strong>
+
+                    <p>
+                      {formatFileSize(
+                        document.size,
+                      )}
+                      {" · "}
+                      {new Date(
+                        document.addedAt,
+                      ).toLocaleDateString(
+                        "fr-FR",
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="equipment-detail-actions">
+                    <a
+                      className="secondary-button"
+                      href={document.dataUrl}
+                      download={document.name}
+                    >
+                      Ouvrir / télécharger
+                    </a>
+
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={() =>
+                        handleDeleteDocument(
+                          document.id,
+                        )
+                      }
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="equipment-detail-card">
+        <h3>
+          Interventions
+        </h3>
+
+        {!showInterventionForm && (
           <button
             className="primary-button"
             type="button"
+            onClick={() =>
+              setShowInterventionForm(true)
+            }
           >
-            Créer une intervention
+            + Créer une intervention
           </button>
-        </div>
+        )}
+
+        {showInterventionForm && (
+          <div className="equipment-intervention-form">
+            <label>
+              Titre
+              <input
+                type="text"
+                value={interventionTitle}
+                onChange={(event) =>
+                  setInterventionTitle(
+                    event.target.value,
+                  )
+                }
+                placeholder="Ex. Réparation de la toiture"
+              />
+            </label>
+
+            <label>
+              Description
+              <textarea
+                rows={5}
+                value={
+                  interventionDescription
+                }
+                onChange={(event) =>
+                  setInterventionDescription(
+                    event.target.value,
+                  )
+                }
+                placeholder="Description des travaux ou de l'intervention..."
+              />
+            </label>
+
+            <label>
+              Date
+              <input
+                type="date"
+                value={interventionDate}
+                onChange={(event) =>
+                  setInterventionDate(
+                    event.target.value,
+                  )
+                }
+              />
+            </label>
+
+            <label>
+              Statut
+              <select
+                value={interventionStatus}
+                onChange={(event) =>
+                  setInterventionStatus(
+                    event.target
+                      .value as InterventionStatus,
+                  )
+                }
+              >
+                <option value="Prévue">
+                  Prévue
+                </option>
+
+                <option value="En cours">
+                  En cours
+                </option>
+
+                <option value="Terminée">
+                  Terminée
+                </option>
+              </select>
+            </label>
+
+            <div className="equipment-detail-actions">
+              <button
+                className="primary-button"
+                type="button"
+                onClick={
+                  handleCreateIntervention
+                }
+              >
+                Enregistrer l'intervention
+              </button>
+
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() =>
+                  setShowInterventionForm(
+                    false,
+                  )
+                }
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        <h3
+          style={{
+            marginTop: "28px",
+          }}
+        >
+          Historique
+        </h3>
+
+        {interventions.length === 0 ? (
+          <p>
+            Aucune intervention enregistrée.
+          </p>
+        ) : (
+          <div className="equipment-intervention-list">
+            {interventions.map(
+              (intervention) => (
+                <div
+                  className="equipment-intervention-card"
+                  key={intervention.id}
+                >
+                  <div>
+                    <strong>
+                      🔧 {intervention.title}
+                    </strong>
+
+                    <p>
+                      {new Date(
+                        `${intervention.date}T12:00:00`,
+                      ).toLocaleDateString(
+                        "fr-FR",
+                      )}
+                      {" · "}
+                      {intervention.status}
+                    </p>
+
+                    {intervention.description && (
+                      <p>
+                        {
+                          intervention.description
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() =>
+                      handleDeleteIntervention(
+                        intervention.id,
+                      )
+                    }
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              ),
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

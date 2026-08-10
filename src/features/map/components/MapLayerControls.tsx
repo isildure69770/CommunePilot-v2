@@ -1,3 +1,15 @@
+import {
+  Building2,
+  FlagTriangleRight,
+  Layers3,
+  MapPinned,
+  MapPin,
+  Route,
+  RotateCcw,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
+
 interface MapLayerControlsProps {
   showBoundary: boolean;
   showRoads: boolean;
@@ -6,7 +18,6 @@ interface MapLayerControlsProps {
   showAmenities: boolean;
   showSignalements: boolean;
   showChantiers: boolean;
-
   onToggleBoundary: () => void;
   onToggleRoads: () => void;
   onToggleHamlets: () => void;
@@ -14,92 +25,53 @@ interface MapLayerControlsProps {
   onToggleAmenities: () => void;
   onToggleSignalements: () => void;
   onToggleChantiers: () => void;
+  onReset: () => void;
 }
 
-export default function MapLayerControls({
-  showBoundary,
-  showRoads,
-  showHamlets,
-  showBuildings,
-  showAmenities,
-  showSignalements,
-  showChantiers,
-  onToggleBoundary,
-  onToggleRoads,
-  onToggleHamlets,
-  onToggleBuildings,
-  onToggleAmenities,
-  onToggleSignalements,
-  onToggleChantiers,
-}: MapLayerControlsProps) {
+export default function MapLayerControls(props: MapLayerControlsProps) {
+  const layers = [
+    { label: "Limite communale", detail: "Contour de Montrottier", active: props.showBoundary, toggle: props.onToggleBoundary, icon: FlagTriangleRight, tone: "boundary" },
+    { label: "Routes", detail: "Réseau routier", active: props.showRoads, toggle: props.onToggleRoads, icon: Route, tone: "roads" },
+    { label: "Hameaux", detail: "Hameaux et lieux-dits", active: props.showHamlets, toggle: props.onToggleHamlets, icon: MapPin, tone: "hamlets" },
+    { label: "Bâtiments", detail: "Emprises bâties", active: props.showBuildings, toggle: props.onToggleBuildings, icon: Building2, tone: "buildings" },
+    { label: "Équipements", detail: "Équipements communaux", active: props.showAmenities, toggle: props.onToggleAmenities, icon: MapPinned, tone: "amenities" },
+    { label: "Signalements", detail: "Incidents enregistrés", active: props.showSignalements, toggle: props.onToggleSignalements, icon: TriangleAlert, tone: "reports" },
+    { label: "Chantiers", detail: "Travaux en cours", active: props.showChantiers, toggle: props.onToggleChantiers, icon: Wrench, tone: "works" },
+  ];
+  const activeCount = layers.filter((layer) => layer.active).length;
+
   return (
-    <div className="map-layer-controls">
-      <strong>
-        Couches cartographiques
-      </strong>
+    <section className="map-layer-controls" aria-label="Couches cartographiques">
+      <div className="map-layer-controls-heading">
+        <div className="map-layer-title">
+          <span><Layers3 size={19} /></span>
+          <div><strong>Couches de la carte</strong><small>{activeCount} couche{activeCount > 1 ? "s" : ""} affichée{activeCount > 1 ? "s" : ""}</small></div>
+        </div>
+        <button className="map-reset-button" type="button" onClick={props.onReset} title="Revenir à la limite communale uniquement">
+          <RotateCcw size={15} />
+          <span>Vue initiale</span>
+        </button>
+      </div>
 
-      <label>
-        <input
-          type="checkbox"
-          checked={showBoundary}
-          onChange={onToggleBoundary}
-        />
-        Limite communale
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showRoads}
-          onChange={onToggleRoads}
-        />
-        Routes
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showHamlets}
-          onChange={onToggleHamlets}
-        />
-        Hameaux / lieux-dits
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showBuildings}
-          onChange={onToggleBuildings}
-        />
-        Bâtiments
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showAmenities}
-          onChange={onToggleAmenities}
-        />
-        Équipements communaux
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showSignalements}
-          onChange={onToggleSignalements}
-        />
-        Signalements
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={showChantiers}
-          onChange={onToggleChantiers}
-        />
-        Chantiers
-      </label>
-    </div>
+      <div className="map-layer-list">
+        {layers.map((layer) => {
+          const Icon = layer.icon;
+          return (
+            <button
+              key={layer.label}
+              className={`map-layer-toggle ${layer.active ? "is-active" : ""} layer-${layer.tone}`}
+              type="button"
+              role="switch"
+              aria-checked={layer.active}
+              onClick={layer.toggle}
+            >
+              <span className="map-layer-icon"><Icon size={17} /></span>
+              <span className="map-layer-copy"><strong>{layer.label}</strong><small>{layer.detail}</small></span>
+              <span className="map-layer-switch" aria-hidden="true"><span /></span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
