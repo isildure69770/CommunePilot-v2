@@ -1,6 +1,7 @@
 import {
   Building2,
   FlagTriangleRight,
+  Grid2X2,
   Layers3,
   MapPinned,
   MapPin,
@@ -18,6 +19,7 @@ interface MapLayerControlsProps {
   showAmenities: boolean;
   showSignalements: boolean;
   showChantiers: boolean;
+  showCadastre: boolean;
   onToggleBoundary: () => void;
   onToggleRoads: () => void;
   onToggleHamlets: () => void;
@@ -25,6 +27,7 @@ interface MapLayerControlsProps {
   onToggleAmenities: () => void;
   onToggleSignalements: () => void;
   onToggleChantiers: () => void;
+  onToggleCadastre: () => void;
   onReset: () => void;
 }
 
@@ -34,6 +37,7 @@ export default function MapLayerControls(props: MapLayerControlsProps) {
     { label: "Routes", detail: "Réseau routier", active: props.showRoads, toggle: props.onToggleRoads, icon: Route, tone: "roads" },
     { label: "Hameaux", detail: "Hameaux et lieux-dits", active: props.showHamlets, toggle: props.onToggleHamlets, icon: MapPin, tone: "hamlets" },
     { label: "Bâtiments", detail: "Emprises bâties", active: props.showBuildings, toggle: props.onToggleBuildings, icon: Building2, tone: "buildings" },
+    { label: "Cadastre", detail: "Parcelles cadastrales", active: props.showCadastre, toggle: props.onToggleCadastre, icon: Grid2X2, tone: "cadastre" },
     { label: "Équipements", detail: "Équipements communaux", active: props.showAmenities, toggle: props.onToggleAmenities, icon: MapPinned, tone: "amenities" },
     { label: "Signalements", detail: "Incidents enregistrés", active: props.showSignalements, toggle: props.onToggleSignalements, icon: TriangleAlert, tone: "reports" },
     { label: "Chantiers", detail: "Travaux en cours", active: props.showChantiers, toggle: props.onToggleChantiers, icon: Wrench, tone: "works" },

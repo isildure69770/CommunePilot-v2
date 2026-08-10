@@ -22,6 +22,7 @@ import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBound
 import RoadsLayer from "../../../reference/roads/layers/RoadsLayer";
 import HamletsLayer from "../../../reference/hamlets/layers/HamletsLayer";
 import BuildingsLayer from "../../../reference/buildings/layers/BuildingsLayer";
+import CadastreLayer from "../../../reference/cadastre/layers/CadastreLayer";
 
 import type {
   CommuneMapMarker,
@@ -96,6 +97,11 @@ export default function CommuneMap({
     setShowAmenities,
   ] = useState(false);
 
+const [
+  showCadastre,
+  setShowCadastre,
+] = useState(false);
+
   const [
     showSignalements,
     setShowSignalements,
@@ -114,6 +120,8 @@ export default function CommuneMap({
     setShowAmenities(false);
     setShowSignalements(false);
     setShowChantiers(false);
+    setShowCadastre(false);
+
   }
 
   const visibleMarkers =
@@ -157,6 +165,7 @@ export default function CommuneMap({
         showAmenities={showAmenities}
         showSignalements={showSignalements}
         showChantiers={showChantiers}
+        showCadastre={showCadastre}
 
         onToggleBoundary={() =>
           setShowBoundary(
@@ -206,6 +215,12 @@ export default function CommuneMap({
               !currentValue,
           )
         }
+        onToggleCadastre={() =>
+  setShowCadastre(
+    (currentValue) =>
+      !currentValue,
+  )
+}
 
         onReset={resetToBoundaryOnly}
       />
@@ -258,6 +273,9 @@ export default function CommuneMap({
               onSelect={onMapClick}
             />
           )}
+          {showCadastre && (
+  <CadastreLayer />
+)}
 
           {selectedPosition && (
             <Marker
