@@ -14,6 +14,7 @@ import VoiriePage from "./features/voirie/pages/VoiriePage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 import CommuneMapPage from "./features/map/pages/CommuneMapPage";
 import EquipmentDetailPage from "./features/equipments/pages/EquipmentDetailPage";
+import MailsPage from "./features/mails/pages/MailsPage";
 
 export default function App() {
   return (
@@ -67,6 +68,11 @@ export default function App() {
               description="Le module Bâtiments sera développé ici."
             />
           }
+        />
+
+        <Route
+          path="/mails"
+          element={<MailsPage />}
         />
 
         <Route
