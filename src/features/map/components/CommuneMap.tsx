@@ -91,10 +91,10 @@ export default function CommuneMap({
     setShowBuildings,
   ] = useState(false);
 
-const [
-  showAmenities,
-  setShowAmenities,
-] = useState(false);
+  const [
+    showAmenities,
+    setShowAmenities,
+  ] = useState(false);
 
   const [
     showSignalements,
@@ -132,19 +132,31 @@ const [
         return false;
       }
 
+      /*
+       * Les interventions sont liées aux équipements.
+       * Elles sont affichées lorsque la couche
+       * "Équipements" est activée.
+       */
+      if (
+        mapMarker.type === "intervention" &&
+        !showAmenities
+      ) {
+        return false;
+      }
+
       return true;
     });
 
   return (
     <div className="commune-map-wrapper">
       <MapLayerControls
-  showBoundary={showBoundary}
-  showRoads={showRoads}
-  showHamlets={showHamlets}
-  showBuildings={showBuildings}
-  showAmenities={showAmenities}
-  showSignalements={showSignalements}
-  showChantiers={showChantiers}
+        showBoundary={showBoundary}
+        showRoads={showRoads}
+        showHamlets={showHamlets}
+        showBuildings={showBuildings}
+        showAmenities={showAmenities}
+        showSignalements={showSignalements}
+        showChantiers={showChantiers}
 
         onToggleBoundary={() =>
           setShowBoundary(
@@ -152,42 +164,49 @@ const [
               !currentValue,
           )
         }
+
         onToggleRoads={() =>
           setShowRoads(
             (currentValue) =>
               !currentValue,
           )
         }
+
         onToggleHamlets={() =>
           setShowHamlets(
             (currentValue) =>
               !currentValue,
           )
         }
+
         onToggleBuildings={() =>
           setShowBuildings(
             (currentValue) =>
               !currentValue,
           )
         }
+
         onToggleAmenities={() =>
-  setShowAmenities(
-    (currentValue) =>
-      !currentValue,
-  )
-}
+          setShowAmenities(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+
         onToggleSignalements={() =>
           setShowSignalements(
             (currentValue) =>
               !currentValue,
           )
         }
+
         onToggleChantiers={() =>
           setShowChantiers(
             (currentValue) =>
               !currentValue,
           )
         }
+
         onReset={resetToBoundaryOnly}
       />
 
@@ -230,9 +249,9 @@ const [
             <BuildingsLayer />
           )}
 
-{showAmenities && (
-  <AmenitiesLayer />
-)}
+          {showAmenities && (
+            <AmenitiesLayer />
+          )}
 
           {onMapClick && (
             <MapClickHandler
@@ -298,7 +317,10 @@ const [
                       {mapMarker.type ===
                       "chantier"
                         ? "🚧"
-                        : "⚠️"}{" "}
+                        : mapMarker.type ===
+                            "intervention"
+                          ? "🔧"
+                          : "⚠️"}{" "}
                       {mapMarker.title}
                     </strong>
 
@@ -311,7 +333,10 @@ const [
                       {mapMarker.type ===
                       "chantier"
                         ? "Chantier"
-                        : "Signalement"}
+                        : mapMarker.type ===
+                            "intervention"
+                          ? "Intervention"
+                          : "Signalement"}
                     </span>
 
                     <span>
@@ -319,10 +344,26 @@ const [
                       {mapMarker.status}
                     </span>
 
-                    <span>
-                      Priorité :{" "}
-                      {mapMarker.priority}
-                    </span>
+                    {mapMarker.type ===
+                      "intervention" &&
+                      mapMarker.date && (
+                        <span>
+                          Date :{" "}
+                          {new Date(
+                            `${mapMarker.date}T12:00:00`,
+                          ).toLocaleDateString(
+                            "fr-FR",
+                          )}
+                        </span>
+                      )}
+
+                    {mapMarker.type !==
+                      "intervention" && (
+                      <span>
+                        Priorité :{" "}
+                        {mapMarker.priority}
+                      </span>
+                    )}
 
                     {mapMarker.description && (
                       <p>
@@ -331,6 +372,17 @@ const [
                         }
                       </p>
                     )}
+
+                    {mapMarker.type ===
+                      "intervention" &&
+                      mapMarker.equipmentId && (
+                        <a
+                          className="secondary-button"
+                          href={`/equipments/${mapMarker.equipmentId}`}
+                        >
+                          Ouvrir la fiche équipement
+                        </a>
+                      )}
                   </div>
                 </Popup>
               </Marker>

@@ -1,12 +1,34 @@
-import { useMemo, useState } from "react";
-import { ArrowRight, Building2, CalendarClock, FileText, FolderKanban, Mail, Map, TriangleAlert } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  ArrowRight,
+  Building2,
+  CalendarClock,
+  FileText,
+  FolderKanban,
+  Mail,
+  Map as MapIcon,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import StatsGrid from "../components/StatsGrid";
 import SearchBar from "../components/SearchBar";
 import ProjectList from "../components/ProjectList";
 import NewProjectModal from "../components/NewProjectModal";
 import type { Project } from "../components/ProjectCard";
+import type {
+  FeatureCollection,
+  Point,
+} from "geojson";
 
+import type {
+  EquipmentIntervention,
+} from "../features/equipments/services/equipmentInterventions";
 const initialProjects: Project[] = [
   { id: 1, title: "Réfection de la route des Auberges", category: "Voirie", manager: "Bernard Boulocher", status: "En cours", priority: "Haute", deadline: "18 août 2026" },
   { id: 2, title: "Entretien de la salle des fêtes", category: "Bâtiments", manager: "Service technique", status: "À traiter", priority: "Normale", deadline: "25 août 2026" },
@@ -23,14 +45,157 @@ const deadlines = [
 const shortcuts = [
   { label: "Nouveau dossier", detail: "Créer et affecter", icon: FolderKanban, action: true },
   { label: "Signaler un incident", detail: "Depuis le terrain", icon: TriangleAlert, path: "/signalements" },
-  { label: "Ouvrir la carte", detail: "Équipements et travaux", icon: Map, path: "/carte" },
+  { label: "Ouvrir la carte", detail: "Équipements et travaux", icon: MapIcon, path: "/carte" },
   { label: "Voir les documents", detail: "Archives municipales", icon: FileText, path: "/documents" },
 ];
-
+interface RecentEquipmentIntervention
+  extends EquipmentIntervention {
+  equipmentId: string;
+  equipmentName: string;
+}
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [projects, setProjects] = useState(initialProjects);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [
+  recentInterventions,
+  setRecentInterventions,
+] = useState<RecentEquipmentIntervention[]>([]);
+
+useEffect(() => {
+  async function loadRecentInterventions() {
+    try {
+      const response = await fetch(
+        "/data/montrottier/amenities.geojson",
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Impossible de charger les équipements.",
+        );
+      }
+
+      const amenities =
+        (await response.json()) as FeatureCollection<
+          Point,
+          {
+            osm_id?: number;
+            name?: string;
+          }
+        >;
+
+      const equipmentNames =
+        new Map<string, string>();
+
+      amenities.features.forEach(
+        (feature) => {
+          const osmId =
+            feature.properties?.osm_id;
+
+          if (osmId === undefined) {
+            return;
+          }
+
+          equipmentNames.set(
+            String(osmId),
+            feature.properties?.name?.trim() ||
+              "Équipement communal",
+          );
+        },
+      );
+
+      const collected:
+        RecentEquipmentIntervention[] = [];
+
+      for (
+        let index = 0;
+        index < localStorage.length;
+        index += 1
+      ) {
+        const key =
+          localStorage.key(index);
+
+        if (
+          !key ||
+          !key.startsWith(
+            "equipment-interventions-",
+          )
+        ) {
+          continue;
+        }
+
+        const equipmentId =
+          key.replace(
+            "equipment-interventions-",
+            "",
+          );
+
+        const stored =
+          localStorage.getItem(key);
+
+        if (!stored) {
+          continue;
+        }
+
+        try {
+          const equipmentInterventions =
+            JSON.parse(
+              stored,
+            ) as EquipmentIntervention[];
+
+          equipmentInterventions.forEach(
+            (intervention) => {
+              collected.push({
+                ...intervention,
+                equipmentId,
+                equipmentName:
+                  equipmentNames.get(
+                    equipmentId,
+                  ) ||
+                  "Équipement communal",
+              });
+            },
+          );
+        } catch {
+          // Ignore une donnée locale invalide.
+        }
+      }
+
+      collected.sort(
+        (first, second) =>
+          second.date.localeCompare(
+            first.date,
+          ),
+      );
+
+      setRecentInterventions(
+        collected.slice(0, 5),
+      );
+    } catch (error) {
+      console.error(
+        "Erreur chargement interventions récentes :",
+        error,
+      );
+
+      setRecentInterventions([]);
+    }
+  }
+
+  loadRecentInterventions();
+
+  window.addEventListener(
+    "focus",
+    loadRecentInterventions,
+  );
+
+  return () => {
+    window.removeEventListener(
+      "focus",
+      loadRecentInterventions,
+    );
+  };
+}, []);
+  
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase();
     return !query ? projects : projects.filter((project) => [project.title, project.category, project.manager, project.status, project.priority].some((value) => value.toLowerCase().includes(query)));
@@ -73,6 +238,88 @@ export default function Dashboard() {
           <div className="compact-feed"><article><span className="feed-avatar">PR</span><div><strong>Dotation voirie 2026</strong><p>Préfecture du Rhône · 09:42</p></div></article><article><span className="feed-avatar">AE</span><div><strong>Réservation salle des fêtes</strong><p>Association locale · Hier</p></div></article></div>
           <Link className="text-link" to="/mails">Ouvrir les mails <ArrowRight size={15} /></Link>
         </section>
+        <section className="dashboard-card activity-card">
+  <div className="section-heading">
+    <div>
+      <h3>
+        Interventions récentes
+      </h3>
+
+      <p>
+        {recentInterventions.length === 0
+          ? "Aucune intervention"
+          : `${recentInterventions.length} intervention${
+              recentInterventions.length > 1
+                ? "s"
+                : ""
+            }`}
+      </p>
+    </div>
+
+    <Wrench size={20} />
+  </div>
+
+  {recentInterventions.length === 0 ? (
+    <div className="compact-feed">
+      <article>
+        <span className="feed-icon">
+          <Wrench />
+        </span>
+
+        <div>
+          <strong>
+            Aucune intervention enregistrée
+          </strong>
+
+          <p>
+            Les interventions créées depuis
+            les fiches équipements apparaîtront ici.
+          </p>
+        </div>
+      </article>
+    </div>
+  ) : (
+    <div className="compact-feed">
+      {recentInterventions.map(
+        (intervention) => (
+          <article
+            key={`${intervention.equipmentId}-${intervention.id}`}
+          >
+            <span className="feed-icon">
+              <Wrench />
+            </span>
+
+            <div>
+              <strong>
+                {intervention.title}
+              </strong>
+
+              <p>
+                {intervention.equipmentName}
+                {" · "}
+                {intervention.status}
+                {" · "}
+                {new Date(
+                  `${intervention.date}T12:00:00`,
+                ).toLocaleDateString(
+                  "fr-FR",
+                )}
+              </p>
+            </div>
+          </article>
+        ),
+      )}
+    </div>
+  )}
+
+  <Link
+    className="text-link"
+    to="/carte"
+  >
+    Voir sur la carte
+    <ArrowRight size={15} />
+  </Link>
+</section>
       </div>
 
       <section className="shortcuts-section"><div className="section-heading"><div><h3>Accès rapides</h3><p>Vos actions les plus courantes</p></div></div><div className="shortcut-grid">{shortcuts.map((item) => {

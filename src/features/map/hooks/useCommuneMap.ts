@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { Chantier } from "../../voirie/types/chantier";
 import type { Signalement } from "../../signalements/types/signalement";
+import type {
+  EquipmentIntervention,
+} from "../../equipments/services/equipmentInterventions";
 
 const CHANTIERS_STORAGE_KEY = "communepilot-chantiers";
 const SIGNALEMENTS_STORAGE_KEY = "communepilot-signalements";
@@ -48,11 +51,15 @@ function hasValidCoordinates(
 
 export interface CommuneMapMarker {
   id: string;
-  sourceId: number;
+
+  sourceId:
+    | number
+    | string;
 
   type:
     | "chantier"
-    | "signalement";
+    | "signalement"
+    | "intervention";
 
   title: string;
   location: string;
@@ -64,6 +71,9 @@ export interface CommuneMapMarker {
   priority: string;
 
   description: string;
+
+  equipmentId?: string;
+  date?: string;
 }
 
 export function useCommuneMap() {
@@ -73,6 +83,142 @@ export function useCommuneMap() {
   const [signalements, setSignalements] =
     useState<Signalement[]>([]);
 
+  const [
+    interventionMarkers,
+    setInterventionMarkers,
+  ] = useState<CommuneMapMarker[]>([]);
+
+  async function loadInterventionMarkers() {
+    try {
+      const response = await fetch(
+        "/data/montrottier/amenities.geojson",
+      );
+
+      if (!response.ok) {
+        setInterventionMarkers([]);
+        return;
+      }
+
+      const amenities =
+        (await response.json()) as {
+          features: Array<{
+            properties?: {
+              osm_id?: number;
+              name?: string;
+            };
+
+            geometry?: {
+              type?: string;
+              coordinates?: number[];
+            };
+          }>;
+        };
+
+      const nextMarkers: CommuneMapMarker[] = [];
+
+      amenities.features.forEach((feature) => {
+        const osmId =
+          feature.properties?.osm_id;
+
+        const coordinates =
+          feature.geometry?.coordinates;
+
+        if (
+          osmId === undefined ||
+          !coordinates ||
+          coordinates.length < 2
+        ) {
+          return;
+        }
+
+        const [
+          longitude,
+          latitude,
+        ] = coordinates;
+
+        if (
+          !hasValidCoordinates(
+            latitude,
+            longitude,
+          )
+        ) {
+          return;
+        }
+
+        const equipmentId =
+          String(osmId);
+
+        const stored =
+          localStorage.getItem(
+            `equipment-interventions-${equipmentId}`,
+          );
+
+        if (!stored) {
+          return;
+        }
+
+        try {
+          const interventions =
+            JSON.parse(
+              stored,
+            ) as EquipmentIntervention[];
+
+          interventions.forEach(
+            (intervention) => {
+              nextMarkers.push({
+                id:
+                  `intervention-${equipmentId}-${intervention.id}`,
+
+                sourceId:
+                  intervention.id,
+
+                type:
+                  "intervention",
+
+                title:
+                  intervention.title,
+
+                location:
+                  feature.properties?.name?.trim() ||
+                  "Équipement communal",
+
+                latitude,
+                longitude,
+
+                status:
+                  intervention.status,
+
+                priority:
+                  "Normale",
+
+                description:
+                  intervention.description,
+
+                equipmentId,
+
+                date:
+                  intervention.date,
+              });
+            },
+          );
+        } catch {
+          // Ignore une donnée locale invalide.
+        }
+      });
+
+      setInterventionMarkers(
+        nextMarkers,
+      );
+    } catch (error) {
+      console.error(
+        "Erreur chargement interventions carte :",
+        error,
+      );
+
+      setInterventionMarkers([]);
+    }
+  }
+
   function refresh() {
     setChantiers(
       loadChantiers(),
@@ -81,6 +227,8 @@ export function useCommuneMap() {
     setSignalements(
       loadSignalements(),
     );
+
+    void loadInterventionMarkers();
   }
 
   useEffect(() => {
@@ -195,11 +343,13 @@ export function useCommuneMap() {
         return [
           ...chantierMarkers,
           ...signalementMarkers,
+          ...interventionMarkers,
         ];
       },
       [
         chantiers,
         signalements,
+        interventionMarkers,
       ],
     );
 
@@ -225,7 +375,11 @@ export function useCommuneMap() {
         sansCoordonnees:
           chantiers.length +
           signalements.length -
-          markers.length,
+          markers.filter(
+            (marker) =>
+              marker.type !==
+              "intervention",
+          ).length,
       };
     }, [
       markers,
