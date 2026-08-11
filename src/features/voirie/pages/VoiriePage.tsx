@@ -4,6 +4,7 @@ import ChantierFilters from "../components/ChantierFilters";
 import ChantierForm from "../components/ChantierForm";
 import { useChantiers } from "../hooks/useChantiers";
 import type { Chantier } from "../types/chantier";
+import RoadEquipmentManager from "../../road-equipment/components/RoadEquipmentManager";
 
 export default function VoiriePage() {
   const {
@@ -139,6 +140,8 @@ export default function VoiriePage() {
         onClose={closeForm}
         onSubmit={handleSubmit}
       />
+
+      <RoadEquipmentManager />
     </section>
   );
 }

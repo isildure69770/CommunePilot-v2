@@ -10,7 +10,7 @@ import {
 } from "react-leaflet";
 
 import L from "leaflet";
-import AmenitiesLayer from "../../../reference/amenities/layers/AmenitiesLayer";
+
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker from "leaflet/dist/images/marker-icon.png";
 import shadow from "leaflet/dist/images/marker-shadow.png";
@@ -22,7 +22,9 @@ import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBound
 import RoadsLayer from "../../../reference/roads/layers/RoadsLayer";
 import HamletsLayer from "../../../reference/hamlets/layers/HamletsLayer";
 import BuildingsLayer from "../../../reference/buildings/layers/BuildingsLayer";
+import AmenitiesLayer from "../../../reference/amenities/layers/AmenitiesLayer";
 import CadastreLayer from "../../../reference/cadastre/layers/CadastreLayer";
+import RoadEquipmentLayer from "../../../reference/road-equipment/layers/RoadEquipmentLayer";
 
 import type {
   CommuneMapMarker,
@@ -97,10 +99,15 @@ export default function CommuneMap({
     setShowAmenities,
   ] = useState(false);
 
-const [
-  showCadastre,
-  setShowCadastre,
-] = useState(false);
+  const [
+    showCadastre,
+    setShowCadastre,
+  ] = useState(false);
+
+  const [
+    showRoadEquipment,
+    setShowRoadEquipment,
+  ] = useState(false);
 
   const [
     showSignalements,
@@ -118,10 +125,10 @@ const [
     setShowHamlets(false);
     setShowBuildings(false);
     setShowAmenities(false);
+    setShowCadastre(false);
+    setShowRoadEquipment(false);
     setShowSignalements(false);
     setShowChantiers(false);
-    setShowCadastre(false);
-
   }
 
   const visibleMarkers =
@@ -140,11 +147,6 @@ const [
         return false;
       }
 
-      /*
-       * Les interventions sont liées aux équipements.
-       * Elles sont affichées lorsque la couche
-       * "Équipements" est activée.
-       */
       if (
         mapMarker.type === "intervention" &&
         !showAmenities
@@ -163,9 +165,10 @@ const [
         showHamlets={showHamlets}
         showBuildings={showBuildings}
         showAmenities={showAmenities}
+        showCadastre={showCadastre}
+        showRoadEquipment={showRoadEquipment}
         showSignalements={showSignalements}
         showChantiers={showChantiers}
-        showCadastre={showCadastre}
 
         onToggleBoundary={() =>
           setShowBoundary(
@@ -202,6 +205,20 @@ const [
           )
         }
 
+        onToggleCadastre={() =>
+          setShowCadastre(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+
+        onToggleRoadEquipment={() =>
+          setShowRoadEquipment(
+            (currentValue) =>
+              !currentValue,
+          )
+        }
+
         onToggleSignalements={() =>
           setShowSignalements(
             (currentValue) =>
@@ -215,12 +232,6 @@ const [
               !currentValue,
           )
         }
-        onToggleCadastre={() =>
-  setShowCadastre(
-    (currentValue) =>
-      !currentValue,
-  )
-}
 
         onReset={resetToBoundaryOnly}
       />
@@ -264,8 +275,16 @@ const [
             <BuildingsLayer />
           )}
 
+          {showCadastre && (
+            <CadastreLayer />
+          )}
+
           {showAmenities && (
             <AmenitiesLayer />
+          )}
+
+          {showRoadEquipment && (
+            <RoadEquipmentLayer />
           )}
 
           {onMapClick && (
@@ -273,9 +292,6 @@ const [
               onSelect={onMapClick}
             />
           )}
-          {showCadastre && (
-  <CadastreLayer />
-)}
 
           {selectedPosition && (
             <Marker
@@ -377,11 +393,11 @@ const [
 
                     {mapMarker.type !==
                       "intervention" && (
-                      <span>
-                        Priorité :{" "}
-                        {mapMarker.priority}
-                      </span>
-                    )}
+                        <span>
+                          Priorité :{" "}
+                          {mapMarker.priority}
+                        </span>
+                      )}
 
                     {mapMarker.description && (
                       <p>
