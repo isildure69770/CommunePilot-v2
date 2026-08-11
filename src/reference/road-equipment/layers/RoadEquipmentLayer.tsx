@@ -39,6 +39,10 @@ export default function RoadEquipmentLayer() {
               <strong>{getEmoji(item.category)} {item.name || item.category}</strong>
               {item.name && <span>Type : {item.category}</span>}
               <span>État : {item.status}</span>
+              {item.photo && <img className="map-popup-equipment-photo" src={item.photo} alt={item.name || item.category} />}
+              {item.lastInspectionDate && <span>Dernier contrôle : {new Intl.DateTimeFormat("fr-FR").format(new Date(`${item.lastInspectionDate}T12:00:00`))}</span>}
+              {item.maintenanceHistory.length > 0 && <span>{item.maintenanceHistory.length} entretien{item.maintenanceHistory.length > 1 ? "s" : ""} enregistré{item.maintenanceHistory.length > 1 ? "s" : ""}</span>}
+              {item.interventions.length > 0 && <span>{item.interventions.length} intervention{item.interventions.length > 1 ? "s" : ""} associée{item.interventions.length > 1 ? "s" : ""}</span>}
               <span>
                 Origine : {item.origin === "OSM" ? "Source OSM" : "Ajout CommunePilot"}
               </span>

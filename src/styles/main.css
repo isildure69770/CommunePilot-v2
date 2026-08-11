@@ -158,6 +158,14 @@ body{
   background: white;
 }
 
+.road-equipment-card-photo {
+  width: calc(100% + 36px);
+  height: 170px;
+  margin: -18px -18px 2px;
+  border-radius: 14px 14px 0 0;
+  object-fit: cover;
+}
+
 .road-equipment-main,
 .road-equipment-actions,
 .road-equipment-meta {
@@ -204,6 +212,73 @@ body{
   margin-top: auto;
 }
 
+.road-equipment-details {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+}
+
+.road-equipment-details summary,
+.road-equipment-repeater-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.road-equipment-details summary {
+  color: #16365d;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.road-equipment-details summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.road-equipment-details-content {
+  display: grid;
+  gap: 16px;
+  padding-top: 14px;
+}
+
+.road-equipment-details-content section,
+.road-equipment-details-content ul,
+.road-equipment-details-content li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.road-equipment-details-content ul {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.road-equipment-details-content li {
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+}
+
+.road-equipment-details-content li div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.road-equipment-details-content time,
+.road-equipment-details-content small,
+.road-equipment-details-content section > span {
+  color: #64748b;
+  font-size: 12px;
+}
+
 .danger-button {
   border: 1px solid #fecaca;
   border-radius: 10px;
@@ -215,9 +290,157 @@ body{
 }
 
 .road-equipment-modal {
-  width: min(760px, calc(100vw - 32px));
+  width: min(860px, calc(100vw - 32px));
   max-height: 92vh;
   overflow-y: auto;
+}
+
+.road-equipment-fieldset {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #dbe1e8;
+  border-radius: 12px;
+}
+
+.road-equipment-fieldset legend {
+  padding: 0 7px;
+  color: #16365d;
+  font-weight: 700;
+}
+
+.road-equipment-photo-preview {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.road-equipment-photo-preview img {
+  width: min(260px, 100%);
+  height: 150px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.road-equipment-repeater,
+.road-equipment-intervention-editor {
+  display: grid;
+  gap: 10px;
+}
+
+.road-equipment-document-heading,
+.road-equipment-document-list li,
+.road-equipment-document-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.road-equipment-document-heading,
+.road-equipment-document-list li {
+  justify-content: space-between;
+}
+
+.road-equipment-file-button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.road-equipment-file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.road-equipment-document-help,
+.road-equipment-document-empty {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+}
+
+.road-equipment-document-error,
+.road-equipment-submit-error {
+  color: var(--danger, #b42318);
+  font-weight: 650;
+}
+
+.road-equipment-document-list {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0;
+  margin: 0.85rem 0 0;
+  list-style: none;
+}
+
+.road-equipment-document-list li {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface, #fff);
+}
+
+.road-equipment-document-list li > div:first-child {
+  min-width: 0;
+}
+
+.road-equipment-document-list strong,
+.road-equipment-document-list small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.road-equipment-document-list small,
+.road-equipment-document-view > span {
+  color: var(--muted);
+}
+
+.road-equipment-document-view {
+  padding: 0.9rem;
+}
+
+.road-equipment-document-view .road-equipment-document-list {
+  margin: 0;
+}
+
+.road-equipment-document-actions a {
+  text-decoration: none;
+}
+
+.road-equipment-submit-error {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.road-equipment-repeat-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.road-equipment-intervention-editor {
+  grid-template-columns: 145px minmax(140px, 1fr) 125px minmax(140px, 1fr) auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.road-equipment-repeat-row input,
+.road-equipment-intervention-editor input,
+.road-equipment-intervention-editor select {
+  min-width: 0;
+}
+
+.map-popup-equipment-photo {
+  width: 220px;
+  max-width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 @media (max-width: 700px) {
@@ -229,6 +452,35 @@ body{
 
   .road-equipment-toolbar input {
     width: 100%;
+  }
+
+  .road-equipment-repeat-row,
+  .road-equipment-intervention-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .road-equipment-document-heading,
+  .road-equipment-document-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .road-equipment-file-button {
+    text-align: center;
+  }
+
+  .road-equipment-document-actions {
+    width: 100%;
+  }
+
+  .road-equipment-document-actions a {
+    flex: 1;
+    text-align: center;
+  }
+
+  .road-equipment-photo-preview {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 .dashboard-page {

@@ -17,6 +17,29 @@ export type RoadEquipmentCategory =
 
 export type RoadEquipmentOrigin = "OSM" | "CommunePilot";
 
+export interface RoadEquipmentMaintenanceEntry {
+  id: string;
+  date: string;
+  description: string;
+}
+
+export interface RoadEquipmentIntervention {
+  id: string;
+  date: string;
+  title: string;
+  status: "Planifiée" | "En cours" | "Terminée";
+  details: string;
+}
+
+export interface RoadEquipmentDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  addedAt: string;
+  dataUrl: string;
+}
+
 export interface RoadEquipment {
   id: string;
   osmId?: number;
@@ -24,6 +47,12 @@ export interface RoadEquipment {
   name: string;
   status: string;
   notes: string;
+  photo?: string;
+  lastInspectionDate?: string;
+  maintenanceNotes?: string;
+  maintenanceHistory: RoadEquipmentMaintenanceEntry[];
+  interventions: RoadEquipmentIntervention[];
+  documents: RoadEquipmentDocument[];
   latitude: number;
   longitude: number;
   origin: RoadEquipmentOrigin;
