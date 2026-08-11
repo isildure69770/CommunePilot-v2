@@ -36,6 +36,7 @@ import type {
 } from "../features/equipments/services/equipmentInterventions";
 import { useRoadEquipment } from "../features/road-equipment/hooks/useRoadEquipment";
 import { getRoadEquipmentAlerts } from "../features/road-equipment/services/roadEquipmentTracking";
+import { useMails } from "../features/mails/hooks/useMails";
 const initialProjects: Project[] = defaultProjects;
 
 const deadlines = [
@@ -56,6 +57,7 @@ interface RecentEquipmentIntervention
   equipmentName: string;
 }
 export default function Dashboard() {
+  const { mails } = useMails();
   const { equipment: roadEquipment } = useRoadEquipment();
   const [search, setSearch] = useState("");
   const [projects, setProjects] = useState<Project[]>(
@@ -212,6 +214,11 @@ useEffect(() => {
   const roadAlerts = useMemo(() => roadEquipment.flatMap((item) =>
     getRoadEquipmentAlerts(item).map((alert) => ({ item, alert })),
   ).sort((first, second) => first.alert.date.localeCompare(second.alert.date)), [roadEquipment]);
+  const activeMails = useMemo(() => mails
+    .filter((mail) => mail.status === "À traiter" || mail.status === "En cours")
+    .sort((first, second) => second.receivedAt.localeCompare(first.receivedAt)), [mails]);
+  const toProcessCount = mails.filter((mail) => mail.status === "À traiter").length;
+  const inProgressCount = mails.filter((mail) => mail.status === "En cours").length;
 
   return (
     <section className="dashboard-page">
@@ -254,8 +261,11 @@ useEffect(() => {
           <Link className="text-link" to="/signalements">Voir les signalements <ArrowRight size={15} /></Link>
         </section>
         <section className="dashboard-card activity-card">
-          <div className="section-heading"><div><h3>Mails récents</h3><p>2 messages à traiter</p></div><Mail size={20} /></div>
-          <div className="compact-feed"><article><span className="feed-avatar">PR</span><div><strong>Dotation voirie 2026</strong><p>Préfecture du Rhône · 09:42</p></div></article><article><span className="feed-avatar">AE</span><div><strong>Réservation salle des fêtes</strong><p>Association locale · Hier</p></div></article></div>
+          <div className="section-heading"><div><h3>Mails récents</h3><p>{toProcessCount} à traiter · {inProgressCount} en cours</p></div><Mail size={20} /></div>
+          <div className="compact-feed dashboard-mail-feed">
+            {activeMails.slice(0, 3).map((mail) => <Link to={`/mails?mail=${mail.id}`} key={mail.id}><span className="feed-avatar">{mail.sender.slice(0, 2).toUpperCase()}</span><div><strong>{mail.subject}</strong><p>{mail.sender} · {mail.status}</p></div></Link>)}
+            {activeMails.length === 0 && <article><span className="feed-icon"><Mail /></span><div><strong>Aucun mail en attente</strong><p>Tous les messages sont répondus ou classés.</p></div></article>}
+          </div>
           <Link className="text-link" to="/mails">Ouvrir les mails <ArrowRight size={15} /></Link>
         </section>
         <section className="dashboard-card activity-card">
