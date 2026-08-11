@@ -21,6 +21,11 @@ import SearchBar from "../components/SearchBar";
 import ProjectList from "../components/ProjectList";
 import NewProjectModal from "../components/NewProjectModal";
 import type { Project } from "../components/ProjectCard";
+import { projects as defaultProjects } from "../data/projects";
+import {
+  loadProjects,
+  saveProjects,
+} from "../services/storage";
 import type {
   FeatureCollection,
   Point,
@@ -29,12 +34,9 @@ import type {
 import type {
   EquipmentIntervention,
 } from "../features/equipments/services/equipmentInterventions";
-const initialProjects: Project[] = [
-  { id: 1, title: "Réfection de la route des Auberges", category: "Voirie", manager: "Bernard Boulocher", status: "En cours", priority: "Haute", deadline: "18 août 2026" },
-  { id: 2, title: "Entretien de la salle des fêtes", category: "Bâtiments", manager: "Service technique", status: "À traiter", priority: "Normale", deadline: "25 août 2026" },
-  { id: 3, title: "Préparation du prochain conseil municipal", category: "Conseil municipal", manager: "Secrétariat", status: "En cours", priority: "Haute", deadline: "12 août 2026" },
-  { id: 4, title: "Mise à jour du plan d'entretien du village", category: "Communication", manager: "Commission communication", status: "Terminé", priority: "Basse", deadline: "5 août 2026" },
-];
+import { useRoadEquipment } from "../features/road-equipment/hooks/useRoadEquipment";
+import { getRoadEquipmentAlerts } from "../features/road-equipment/services/roadEquipmentTracking";
+const initialProjects: Project[] = defaultProjects;
 
 const deadlines = [
   { date: "12", month: "AOÛT", title: "Conseil municipal", detail: "Préparer l’ordre du jour", level: "urgent" },
@@ -54,8 +56,11 @@ interface RecentEquipmentIntervention
   equipmentName: string;
 }
 export default function Dashboard() {
+  const { equipment: roadEquipment } = useRoadEquipment();
   const [search, setSearch] = useState("");
-  const [projects, setProjects] = useState(initialProjects);
+  const [projects, setProjects] = useState<Project[]>(
+    () => loadProjects() ?? initialProjects,
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [
   recentInterventions,
@@ -195,11 +200,18 @@ useEffect(() => {
     );
   };
 }, []);
+
+  useEffect(() => {
+    saveProjects(projects);
+  }, [projects]);
   
   const filteredProjects = useMemo(() => {
     const query = search.trim().toLowerCase();
     return !query ? projects : projects.filter((project) => [project.title, project.category, project.manager, project.status, project.priority].some((value) => value.toLowerCase().includes(query)));
   }, [projects, search]);
+  const roadAlerts = useMemo(() => roadEquipment.flatMap((item) =>
+    getRoadEquipmentAlerts(item).map((alert) => ({ item, alert })),
+  ).sort((first, second) => first.alert.date.localeCompare(second.alert.date)), [roadEquipment]);
 
   return (
     <section className="dashboard-page">
@@ -228,6 +240,14 @@ useEffect(() => {
       </div>
 
       <div className="dashboard-feed-grid">
+        <section className="dashboard-card activity-card road-equipment-dashboard-alerts">
+          <div className="section-heading"><div><h3>Alertes patrimoine voirie</h3><p>{roadAlerts.length} priorité{roadAlerts.length > 1 ? "s" : ""} à surveiller</p></div><CalendarClock size={20} /></div>
+          <div className="compact-feed">
+            {roadAlerts.slice(0, 5).map(({ item, alert }) => <article key={`${item.id}-${alert.kind}`}><span className={`feed-icon ${alert.level === "overdue" ? "warning" : ""}`}><Wrench /></span><div><strong>{item.name || item.category}</strong><p>{alert.label} {alert.level === "overdue" ? "en retard" : "à échéance proche"} · {new Date(`${alert.date}T12:00:00`).toLocaleDateString("fr-FR")}</p></div></article>)}
+            {roadAlerts.length === 0 && <article><span className="feed-icon"><Wrench /></span><div><strong>Aucune échéance urgente</strong><p>Contrôles et entretiens à jour sur les 30 prochains jours.</p></div></article>}
+          </div>
+          <Link className="text-link" to="/voirie">Gérer le patrimoine <ArrowRight size={15} /></Link>
+        </section>
         <section className="dashboard-card activity-card">
           <div className="section-heading"><div><h3>Signalements récents</h3><p>Activité terrain</p></div><TriangleAlert size={20} /></div>
           <div className="compact-feed"><article><span className="feed-icon warning"><TriangleAlert /></span><div><strong>Nid-de-poule – Route du Rey</strong><p>Urgent · signalé aujourd’hui à 08:35</p></div></article><article><span className="feed-icon"><Building2 /></span><div><strong>Éclairage public défectueux</strong><p>À traiter · Place de l’Église</p></div></article></div>

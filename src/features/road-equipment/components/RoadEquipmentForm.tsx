@@ -16,6 +16,7 @@ interface Props {
   equipment: RoadEquipment | null;
   onClose: () => void;
   onSubmit: (value: RoadEquipmentFormValue) => void;
+  createIntervention?: boolean;
 }
 
 const emptyForm: RoadEquipmentFormValue = {
@@ -25,6 +26,8 @@ const emptyForm: RoadEquipmentFormValue = {
   notes: "",
   photo: "",
   lastInspectionDate: "",
+  nextInspectionDate: "",
+  nextMaintenanceDate: "",
   maintenanceNotes: "",
   maintenanceHistory: [],
   interventions: [],
@@ -38,14 +41,14 @@ export default function RoadEquipmentForm({
   equipment,
   onClose,
   onSubmit,
+  createIntervention = false,
 }: Props) {
   const [form, setForm] = useState<RoadEquipmentFormValue>(emptyForm);
   const [documentError, setDocumentError] = useState("");
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    setForm(
-      equipment
+    const nextForm = equipment
         ? {
             category: equipment.category,
             name: equipment.name,
@@ -53,6 +56,8 @@ export default function RoadEquipmentForm({
             notes: equipment.notes,
             photo: equipment.photo ?? "",
             lastInspectionDate: equipment.lastInspectionDate ?? "",
+            nextInspectionDate: equipment.nextInspectionDate ?? "",
+            nextMaintenanceDate: equipment.nextMaintenanceDate ?? "",
             maintenanceNotes: equipment.maintenanceNotes ?? "",
             maintenanceHistory: equipment.maintenanceHistory ?? [],
             interventions: equipment.interventions ?? [],
@@ -60,11 +65,14 @@ export default function RoadEquipmentForm({
             latitude: equipment.latitude,
             longitude: equipment.longitude,
           }
-        : emptyForm,
-    );
+        : emptyForm;
+    setForm(createIntervention && equipment ? {
+      ...nextForm,
+      interventions: [...nextForm.interventions, { id: crypto.randomUUID(), date: "", title: "", status: "Planifiée", details: "", cost: undefined }],
+    } : nextForm);
     setDocumentError("");
     setSubmitError("");
-  }, [equipment, isOpen]);
+  }, [equipment, isOpen, createIntervention]);
 
   if (!isOpen) return null;
 
@@ -106,7 +114,7 @@ export default function RoadEquipmentForm({
       ...form,
       maintenanceHistory: [
         ...form.maintenanceHistory,
-        { id: crypto.randomUUID(), date: "", description: "" },
+        { id: crypto.randomUUID(), date: "", description: "", cost: undefined },
       ],
     });
   }
@@ -116,7 +124,7 @@ export default function RoadEquipmentForm({
       ...form,
       interventions: [
         ...form.interventions,
-        { id: crypto.randomUUID(), date: "", title: "", status: "Planifiée", details: "" },
+        { id: crypto.randomUUID(), date: "", title: "", status: "Planifiée", details: "", cost: undefined },
       ],
     });
   }
@@ -311,6 +319,16 @@ export default function RoadEquipmentForm({
                 onChange={(event) => setForm({ ...form, lastInspectionDate: event.target.value })}
               />
             </label>
+            <div className="road-equipment-date-grid">
+              <label>
+                Prochain contrôle
+                <input type="date" value={form.nextInspectionDate} onChange={(event) => setForm({ ...form, nextInspectionDate: event.target.value })} />
+              </label>
+              <label>
+                Prochain entretien
+                <input type="date" value={form.nextMaintenanceDate} onChange={(event) => setForm({ ...form, nextMaintenanceDate: event.target.value })} />
+              </label>
+            </div>
             <label>
               Informations d’entretien
               <textarea
@@ -339,6 +357,7 @@ export default function RoadEquipmentForm({
                     placeholder="Entretien réalisé"
                     onChange={(event) => setForm({ ...form, maintenanceHistory: form.maintenanceHistory.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item) })}
                   />
+                  <input aria-label="Coût de l’entretien" type="number" min="0" step="0.01" value={entry.cost ?? ""} placeholder="Coût €" onChange={(event) => setForm({ ...form, maintenanceHistory: form.maintenanceHistory.map((item, itemIndex) => itemIndex === index ? { ...item, cost: event.target.value === "" ? undefined : Number(event.target.value) } : item) })} />
                   <button type="button" className="danger-button" onClick={() => setForm({ ...form, maintenanceHistory: form.maintenanceHistory.filter((_, itemIndex) => itemIndex !== index) })} aria-label="Supprimer cette entrée">×</button>
                 </div>
               ))}
@@ -359,6 +378,7 @@ export default function RoadEquipmentForm({
                   <option>Planifiée</option><option>En cours</option><option>Terminée</option>
                 </select>
                 <input aria-label="Détails de l’intervention" value={intervention.details} placeholder="Détails" onChange={(event) => setForm({ ...form, interventions: form.interventions.map((item, itemIndex) => itemIndex === index ? { ...item, details: event.target.value } : item) })} />
+                <input aria-label="Coût de l’intervention" type="number" min="0" step="0.01" value={intervention.cost ?? ""} placeholder="Coût €" onChange={(event) => setForm({ ...form, interventions: form.interventions.map((item, itemIndex) => itemIndex === index ? { ...item, cost: event.target.value === "" ? undefined : Number(event.target.value) } : item) })} />
                 <button type="button" className="danger-button" onClick={() => setForm({ ...form, interventions: form.interventions.filter((_, itemIndex) => itemIndex !== index) })} aria-label="Supprimer cette intervention">×</button>
               </div>
             ))}

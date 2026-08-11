@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 import DossiersPage from "./features/dossiers/pages/DossiersPage";
+import DossierDetailPage from "./features/dossiers/pages/DossierDetailPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 import CommuneMapPage from "./features/map/pages/CommuneMapPage";
@@ -28,6 +29,11 @@ export default function App() {
         <Route
           path="/dossiers"
           element={<DossiersPage />}
+        />
+
+        <Route
+          path="/dossiers/:id"
+          element={<DossierDetailPage />}
         />
 
         <Route

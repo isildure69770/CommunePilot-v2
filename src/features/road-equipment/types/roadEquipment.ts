@@ -21,6 +21,7 @@ export interface RoadEquipmentMaintenanceEntry {
   id: string;
   date: string;
   description: string;
+  cost?: number;
 }
 
 export interface RoadEquipmentIntervention {
@@ -29,6 +30,7 @@ export interface RoadEquipmentIntervention {
   title: string;
   status: "Planifiée" | "En cours" | "Terminée";
   details: string;
+  cost?: number;
 }
 
 export interface RoadEquipmentDocument {
@@ -49,6 +51,8 @@ export interface RoadEquipment {
   notes: string;
   photo?: string;
   lastInspectionDate?: string;
+  nextInspectionDate?: string;
+  nextMaintenanceDate?: string;
   maintenanceNotes?: string;
   maintenanceHistory: RoadEquipmentMaintenanceEntry[];
   interventions: RoadEquipmentIntervention[];

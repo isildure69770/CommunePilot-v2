@@ -34,6 +34,8 @@ export async function loadOsmRoadEquipment(): Promise<RoadEquipment[]> {
       notes: "",
       photo: "",
       lastInspectionDate: "",
+      nextInspectionDate: "",
+      nextMaintenanceDate: "",
       maintenanceNotes: "",
       maintenanceHistory: [],
       interventions: [],

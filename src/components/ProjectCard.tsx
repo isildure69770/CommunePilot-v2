@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export interface Project {
   id: number;
   title: string;
@@ -51,7 +53,13 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           {project.status}
         </span>
 
-        <button type="button">Ouvrir</button>
+        <Link
+          className="project-open-link"
+          to={`/dossiers/${project.id}`}
+          aria-label={`Ouvrir le dossier ${project.title}`}
+        >
+          Ouvrir
+        </Link>
       </div>
     </article>
   );
