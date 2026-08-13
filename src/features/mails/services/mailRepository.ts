@@ -4,6 +4,7 @@ import type { MailAttachment, MailStatus, MunicipalMail } from "../types/mail";
 export const MAIL_STORAGE_KEY = "communepilot-mails-v2";
 const LEGACY_KEYS = ["communepilot-mails", "mails"];
 export const MAILS_CHANGED_EVENT = "communepilot:mails-changed";
+const DELETED_OUTLOOK_MAILS_KEY = "communepilot-deleted-outlook-mails-v1";
 
 type LegacyMail = Partial<MunicipalMail> & { attachmentCount?: number; receivedAt?: string };
 
@@ -24,6 +25,7 @@ function migrateMail(raw: LegacyMail, index: number): MunicipalMail | null {
     externalId: raw.externalId,
     sender: raw.sender,
     senderEmail: raw.senderEmail,
+    recipients: Array.isArray(raw.recipients) ? raw.recipients : [],
     subject: raw.subject,
     preview: raw.preview ?? "",
     content: raw.content ?? raw.preview ?? "",
@@ -37,6 +39,9 @@ function migrateMail(raw: LegacyMail, index: number): MunicipalMail | null {
     internalNotes: raw.internalNotes ?? "",
     followUps: Array.isArray(raw.followUps) ? raw.followUps : [],
     source: raw.source ?? "local",
+    isRead: raw.isRead,
+    hasAttachments: raw.hasAttachments ?? attachments.length > 0,
+    webUrl: raw.webUrl,
     updatedAt: raw.updatedAt ?? receivedAt,
   };
 }
@@ -49,6 +54,15 @@ function parse(raw: string | null): MunicipalMail[] | null {
     return value.map((mail, index) => migrateMail(mail as LegacyMail, index)).filter((mail): mail is MunicipalMail => mail !== null);
   } catch {
     return null;
+  }
+}
+
+function getDeletedOutlookIds(): Set<string> {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(DELETED_OUTLOOK_MAILS_KEY) ?? "[]");
+    return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : []);
+  } catch {
+    return new Set();
   }
 }
 
@@ -72,6 +86,34 @@ export const mailRepository = {
   },
   update(id: number, changes: Partial<MunicipalMail>): MunicipalMail[] {
     const next = this.getAll().map((mail) => mail.id === id ? { ...mail, ...changes, id: mail.id, updatedAt: new Date().toISOString() } : mail);
+    this.saveAll(next);
+    return next;
+  },
+  deleteLocal(id: number): MunicipalMail[] {
+    const current = this.getAll();
+    const removed = current.find((mail) => mail.id === id);
+    if (removed?.source === "outlook" && removed.externalId) {
+      const deletedIds = getDeletedOutlookIds();
+      deletedIds.add(removed.externalId);
+      localStorage.setItem(DELETED_OUTLOOK_MAILS_KEY, JSON.stringify([...deletedIds]));
+    }
+    const next = current.filter((mail) => mail.id !== id);
+    this.saveAll(next);
+    return next;
+  },
+  mergeProviderMails(remoteMails: MunicipalMail[]): MunicipalMail[] {
+    const current = this.getAll();
+    const deletedOutlookIds = getDeletedOutlookIds();
+    const visibleRemoteMails = remoteMails.filter((mail) => !mail.externalId || !deletedOutlookIds.has(mail.externalId));
+    const byExternalId = new Map(current.filter((mail) => mail.externalId).map((mail) => [mail.externalId, mail]));
+    const incomingIds = new Set(visibleRemoteMails.map((mail) => mail.externalId));
+    const mergedRemote = visibleRemoteMails.map((remote) => {
+      const local = remote.externalId ? byExternalId.get(remote.externalId) : undefined;
+      if (!local) return remote;
+      return { ...remote, id: local.id, status: local.status, commission: local.commission, category: local.category, dossierId: local.dossierId, summary: local.summary, internalNotes: local.internalNotes, followUps: local.followUps };
+    });
+    const untouched = current.filter((mail) => !mail.externalId || !incomingIds.has(mail.externalId));
+    const next = [...mergedRemote, ...untouched].sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
     this.saveAll(next);
     return next;
   },

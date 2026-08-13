@@ -203,6 +203,12 @@ export default function EquipmentDetailPage() {
     setShowInterventionForm,
   ] = useState(false);
 
+
+  const [
+  editingInterventionId,
+  setEditingInterventionId,
+] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadEquipment() {
       try {
@@ -453,28 +459,57 @@ export default function EquipmentDetailPage() {
     );
   }
 
-  function handleCreateIntervention() {
-    if (!equipment) {
-      return;
-    }
+  function resetInterventionForm() {
+  setInterventionTitle("");
+  setInterventionDescription("");
 
-    if (!interventionTitle.trim()) {
-      return;
-    }
+  setInterventionDate(
+    new Date()
+      .toISOString()
+      .slice(0, 10),
+  );
 
-    const newIntervention: EquipmentIntervention = {
-      id: `${Date.now()}`,
-      title: interventionTitle.trim(),
-      description:
-        interventionDescription.trim(),
-      date: interventionDate,
-      status: interventionStatus,
-    };
+  setInterventionStatus(
+    "Prévue",
+  );
 
-    const nextInterventions = [
-      newIntervention,
-      ...interventions,
-    ];
+  setEditingInterventionId(
+    null,
+  );
+
+  setShowInterventionForm(
+    false,
+  );
+}
+
+function handleSaveIntervention() {
+  if (!equipment) {
+    return;
+  }
+
+  if (!interventionTitle.trim()) {
+    return;
+  }
+
+  if (editingInterventionId) {
+    const nextInterventions =
+      interventions.map(
+        (intervention) =>
+          intervention.id ===
+          editingInterventionId
+            ? {
+                ...intervention,
+                title:
+                  interventionTitle.trim(),
+                description:
+                  interventionDescription.trim(),
+                date:
+                  interventionDate,
+                status:
+                  interventionStatus,
+              }
+            : intervention,
+      );
 
     setInterventions(
       nextInterventions,
@@ -485,14 +520,66 @@ export default function EquipmentDetailPage() {
       nextInterventions,
     );
 
-    setInterventionTitle("");
-    setInterventionDescription("");
-    setInterventionDate(
-      new Date().toISOString().slice(0, 10),
-    );
-    setInterventionStatus("Prévue");
-    setShowInterventionForm(false);
+    resetInterventionForm();
+    return;
   }
+
+  const newIntervention: EquipmentIntervention = {
+    id: `${Date.now()}`,
+    title:
+      interventionTitle.trim(),
+    description:
+      interventionDescription.trim(),
+    date:
+      interventionDate,
+    status:
+      interventionStatus,
+  };
+
+  const nextInterventions = [
+    newIntervention,
+    ...interventions,
+  ];
+
+  setInterventions(
+    nextInterventions,
+  );
+
+  saveEquipmentInterventions(
+    String(equipment.id),
+    nextInterventions,
+  );
+
+  resetInterventionForm();
+}
+
+function handleEditIntervention(
+  intervention: EquipmentIntervention,
+) {
+  setEditingInterventionId(
+    intervention.id,
+  );
+
+  setInterventionTitle(
+    intervention.title,
+  );
+
+  setInterventionDescription(
+    intervention.description,
+  );
+
+  setInterventionDate(
+    intervention.date,
+  );
+
+  setInterventionStatus(
+    intervention.status as InterventionStatus,
+  );
+
+  setShowInterventionForm(
+    true,
+  );
+}
 
   function handleDeleteIntervention(
     interventionId: string,
@@ -863,26 +950,25 @@ export default function EquipmentDetailPage() {
 
             <div className="equipment-detail-actions">
               <button
-                className="primary-button"
-                type="button"
-                onClick={
-                  handleCreateIntervention
-                }
-              >
-                Enregistrer l'intervention
-              </button>
-
+  className="primary-button"
+  type="button"
+  onClick={
+    handleSaveIntervention
+  }
+>
+  {editingInterventionId
+    ? "Enregistrer les modifications"
+    : "Enregistrer l'intervention"}
+</button>
               <button
-                className="secondary-button"
-                type="button"
-                onClick={() =>
-                  setShowInterventionForm(
-                    false,
-                  )
-                }
-              >
-                Annuler
-              </button>
+  className="secondary-button"
+  type="button"
+  onClick={
+    resetInterventionForm
+  }
+>
+  Annuler
+</button>
             </div>
           </div>
         )}
@@ -931,17 +1017,31 @@ export default function EquipmentDetailPage() {
                     )}
                   </div>
 
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={() =>
-                      handleDeleteIntervention(
-                        intervention.id,
-                      )
-                    }
-                  >
-                    Supprimer
-                  </button>
+                  <div className="equipment-detail-actions">
+  <button
+    className="secondary-button"
+    type="button"
+    onClick={() =>
+      handleEditIntervention(
+        intervention,
+      )
+    }
+  >
+    Modifier
+  </button>
+
+  <button
+    className="secondary-button"
+    type="button"
+    onClick={() =>
+      handleDeleteIntervention(
+        intervention.id,
+      )
+    }
+  >
+    Supprimer
+  </button>
+</div>
                 </div>
               ),
             )}

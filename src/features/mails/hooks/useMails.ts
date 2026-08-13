@@ -21,5 +21,6 @@ export function useMails() {
   return {
     mails,
     updateMail: (id: number, changes: Partial<MunicipalMail>) => setMails(mailRepository.update(id, changes)),
+    deleteMail: (id: number) => setMails(mailRepository.deleteLocal(id)),
   };
 }

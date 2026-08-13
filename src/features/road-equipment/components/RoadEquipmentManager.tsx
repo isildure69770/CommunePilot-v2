@@ -1,4 +1,7 @@
 import { useMemo, useRef, useState } from "react";
+import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet";
+import { FilePenLine, List, Map, MapPin, MoreVertical, Printer, Trash2, Wrench } from "lucide-react";
+import { Link } from "react-router-dom";
 import RoadEquipmentForm from "./RoadEquipmentForm";
 import { useRoadEquipment } from "../hooks/useRoadEquipment";
 import type {
@@ -7,27 +10,27 @@ import type {
 } from "../types/roadEquipment";
 import {
   getRoadEquipmentAlerts,
-  getRoadEquipmentStats,
   getRoadEquipmentTotalCost,
 } from "../services/roadEquipmentTracking";
 import { downloadText, roadEquipmentToCsv } from "../services/roadEquipmentExport";
 import { createRoadEquipmentBackup, restoreRoadEquipmentBackup } from "../services/roadEquipmentStorage";
+import { useIdentity } from "../../access/LocalIdentityProvider";
 
 function formatDate(value?: string) {
   if (!value) return "Non renseignée";
   return new Intl.DateTimeFormat("fr-FR").format(new Date(`${value}T12:00:00`));
 }
 
-function formatFileSize(size: number) {
-  if (size < 1_000_000) return `${Math.max(1, Math.round(size / 1_000))} Ko`;
-  return `${(size / 1_000_000).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} Mo`;
-}
-
-function formatCost(value: number) {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
-}
+const EQUIPMENT_FAMILIES = [
+  { label: "Signalisation & sécurité", icon: "🚧", categories: ["Barrière / portail", "Panneau de signalisation", "Borne", "Poteau incendie"] },
+  { label: "Mobilier urbain", icon: "🪑", categories: ["Banc"] },
+  { label: "Propreté & déchets", icon: "♻️", categories: ["Corbeille", "Point déchets"] },
+  { label: "Éclairage & réseaux", icon: "💡", categories: ["Lampadaire", "Armoire technique", "Point d'eau potable"] },
+  { label: "Autres aménagements", icon: "📍", categories: ["Autre"] },
+] as const;
 
 export default function RoadEquipmentManager() {
+  const { can } = useIdentity();
   const {
     equipment,
     loading,
@@ -50,6 +53,8 @@ export default function RoadEquipmentManager() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [createIntervention, setCreateIntervention] = useState(false);
   const [printingId, setPrintingId] = useState("");
+  const [view, setView] = useState<"list" | "map">("list");
+  const [selectedFamily, setSelectedFamily] = useState("");
 
   const filtered = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("fr");
@@ -75,21 +80,28 @@ export default function RoadEquipmentManager() {
       const alerts = getRoadEquipmentAlerts(item);
       const totalCost = getRoadEquipmentTotalCost(item);
       const dates = [item.lastInspectionDate, item.nextInspectionDate, item.nextMaintenanceDate].filter(Boolean) as string[];
-      return textMatches && (!category || item.category === category)
+      const activeFamily = EQUIPMENT_FAMILIES.find((entry) => entry.label === selectedFamily);
+      return textMatches && (!selectedFamily || activeFamily?.categories.includes(item.category as never)) && (!category || item.category === category)
         && (!status || item.status === status) && (!origin || item.origin === origin)
         && (!deadline || alerts.some((alert) => alert.level === deadline))
         && (!minCost || totalCost >= Number(minCost)) && (!maxCost || totalCost <= Number(maxCost))
         && (!dateFrom || dates.some((date) => date >= dateFrom))
         && (!dateTo || dates.some((date) => date <= dateTo));
     });
-  }, [category, dateFrom, dateTo, deadline, equipment, maxCost, minCost, origin, search, status]);
+  }, [category, dateFrom, dateTo, deadline, equipment, maxCost, minCost, origin, search, selectedFamily, status]);
 
-  const stats = useMemo(() => getRoadEquipmentStats(equipment), [equipment]);
   const categories = useMemo(() => Array.from(new Set(equipment.map((item) => item.category))).sort(), [equipment]);
   const statuses = useMemo(() => Array.from(new Set(equipment.map((item) => item.status))).sort(), [equipment]);
+  const families = useMemo(() => EQUIPMENT_FAMILIES.map((family) => ({
+    ...family,
+    count: equipment.filter((item) => (family.categories as readonly string[]).includes(item.category)).length,
+  })), [equipment]);
+  const mapCenter = useMemo<[number, number]>(() => filtered.length
+    ? [filtered.reduce((sum, item) => sum + item.latitude, 0) / filtered.length, filtered.reduce((sum, item) => sum + item.longitude, 0) / filtered.length]
+    : [45.7905, 4.4667], [filtered]);
 
   function resetFilters() {
-    setSearch(""); setCategory(""); setStatus(""); setOrigin(""); setDeadline("");
+    setSearch(""); setCategory(""); setSelectedFamily(""); setStatus(""); setOrigin(""); setDeadline("");
     setMinCost(""); setMaxCost(""); setDateFrom(""); setDateTo("");
   }
 
@@ -145,15 +157,21 @@ export default function RoadEquipmentManager() {
     <section className="road-equipment-manager">
       <div className="section-heading road-equipment-heading">
         <div>
-          <span className="eyebrow">Référentiel communal</span>
-          <h3>Équipements de voirie</h3>
-          <p>
-            La source OSM reste intacte. Les ajouts et corrections sont enregistrés dans CommunePilot.
-          </p>
+          <span className="eyebrow">Patrimoine communal</span>
+          <h3>Équipements</h3>
+          <p>Consultez et gérez les équipements par famille, en liste ou sur la carte.</p>
         </div>
-        <button className="primary-button" type="button" onClick={openCreate}>
+        {can("equipements", "create") && <button className="primary-button" type="button" onClick={openCreate}>
           + Ajouter un équipement
-        </button>
+        </button>}
+      </div>
+
+      <div className="equipment-family-grid" aria-label="Catégories d’équipements">
+        {families.map((family) => (
+          <button className={family.label === selectedFamily ? "is-active" : undefined} type="button" key={family.label} onClick={() => setSelectedFamily((current) => current === family.label ? "" : family.label)}>
+            <span>{family.icon}</span><span><strong>{family.label}</strong><small>{family.count} équipement{family.count > 1 ? "s" : ""}</small></span>
+          </button>
+        ))}
       </div>
 
       <div className="road-equipment-toolbar">
@@ -164,6 +182,10 @@ export default function RoadEquipmentManager() {
           placeholder="Rechercher par type, nom, état…"
           aria-label="Rechercher un équipement de voirie"
         />
+        <div className="equipment-view-switch" aria-label="Mode d’affichage">
+          <button className={view === "list" ? "is-active" : ""} type="button" onClick={() => setView("list")}><List /> Liste</button>
+          <button className={view === "map" ? "is-active" : ""} type="button" onClick={() => setView("map")}><Map /> Carte</button>
+        </div>
         <span>{filtered.length} équipement{filtered.length > 1 ? "s" : ""}</span>
       </div>
 
@@ -182,14 +204,6 @@ export default function RoadEquipmentManager() {
         <button className="secondary-button" type="button" onClick={resetFilters}>Réinitialiser les filtres</button>
       </details>
 
-      <section className="road-equipment-statistics" aria-label="Statistiques du patrimoine">
-        <div><strong>{stats.total}</strong><span>équipements</span></div>
-        <div className="stat-overdue"><strong>{stats.overdue}</strong><span>échéances en retard</span></div>
-        <div className="stat-soon"><strong>{stats.soon}</strong><span>échéances proches</span></div>
-        <div><strong>{formatCost(stats.totalCost)}</strong><span>coûts cumulés</span></div>
-        <details><summary>Répartition par type et état</summary><div className="road-equipment-breakdown"><ul>{stats.byCategory.map(([label, count]) => <li key={label}><span>{label}</span><strong>{count}</strong></li>)}</ul><ul>{stats.byStatus.map(([label, count]) => <li key={label}><span>{label}</span><strong>{count}</strong></li>)}</ul></div></details>
-      </section>
-
       <div className="road-equipment-data-actions">
         <button className="secondary-button" type="button" onClick={() => downloadText("patrimoine-voirie.csv", roadEquipmentToCsv(filtered), "text/csv;charset=utf-8")}>Exporter le résultat en CSV</button>
         <button className="secondary-button" type="button" onClick={() => downloadText("sauvegarde-equipements-voirie.json", JSON.stringify(createRoadEquipmentBackup(), null, 2), "application/json")}>Sauvegarder en JSON</button>
@@ -200,122 +214,26 @@ export default function RoadEquipmentManager() {
       {loading && <div className="empty-state">Chargement du référentiel…</div>}
       {error && <div className="map-warning">{error}</div>}
 
-      {!loading && !error && (
+      {!loading && !error && view === "list" && (
         <div className="road-equipment-list">
+          <div className="road-equipment-list-head"><span>Équipement</span><span>Emplacement</span><span>Catégorie</span><span>État</span><span>Dernier contrôle</span><span>Actions</span></div>
           {filtered.map((item) => {
             const alerts = getRoadEquipmentAlerts(item);
-            const totalCost = getRoadEquipmentTotalCost(item);
             return (
             <article key={item.id} className={`road-equipment-row${alerts.some((alert) => alert.level === "overdue") ? " has-overdue-alert" : ""}${printingId === item.id ? " is-printing" : ""}`}>
-              {item.photo && (
-                <img
-                  className="road-equipment-card-photo"
-                  src={item.photo}
-                  alt={item.name || item.category}
-                  loading="lazy"
-                />
-              )}
-              <div className="road-equipment-main">
-                <div>
-                  <strong>{item.name || item.category}</strong>
-                  {item.name && <span>{item.category}</span>}
-                </div>
-                <span className={`road-equipment-source source-${item.origin.toLowerCase()}`}>
-                  {item.origin === "OSM" ? "Source OSM" : "Ajout CommunePilot"}
-                </span>
-              </div>
-              <div className="road-equipment-meta">
-                <span>État : {item.status}</span>
-                <span>Dernier contrôle : {formatDate(item.lastInspectionDate)}</span>
-                <span>Prochain contrôle : {formatDate(item.nextInspectionDate)}</span>
-                <span>Prochain entretien : {formatDate(item.nextMaintenanceDate)}</span>
-                <strong>Coût cumulé : {formatCost(totalCost)}</strong>
-                <span>{item.latitude.toFixed(6)} · {item.longitude.toFixed(6)}</span>
-                {item.osmId && <span>OSM #{item.osmId}</span>}
-              </div>
-              {alerts.length > 0 && (
-                <div className="road-equipment-alerts" aria-label="Échéances à surveiller">
-                  {alerts.map((alert) => (
-                    <span key={alert.kind} className={`road-equipment-alert alert-${alert.level}`}>
-                      {alert.label} {alert.level === "overdue" ? "en retard" : "à venir"} · {formatDate(alert.date)}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {item.notes && <p>{item.notes}</p>}
-              <details className="road-equipment-details">
-                <summary>
-                  Suivi et interventions
-                  <span>{item.maintenanceHistory.length + item.interventions.length} entrée{item.maintenanceHistory.length + item.interventions.length > 1 ? "s" : ""}</span>
-                </summary>
-                <div className="road-equipment-details-content">
-                  <section>
-                    <strong>Entretien</strong>
-                    {item.maintenanceNotes && <p>{item.maintenanceNotes}</p>}
-                    {item.maintenanceHistory.length > 0 ? (
-                      <ul>
-                        {item.maintenanceHistory.map((entry) => (
-                          <li key={entry.id}><time>{formatDate(entry.date)}</time>{entry.description}{entry.cost !== undefined && <small>{formatCost(entry.cost)}</small>}</li>
-                        ))}
-                      </ul>
-                    ) : <span>Aucun entretien enregistré.</span>}
-                  </section>
-                  <section>
-                    <strong>Interventions associées</strong>
-                    {item.interventions.length > 0 ? (
-                      <ul>
-                        {item.interventions.map((intervention) => (
-                          <li key={intervention.id}>
-                            <div><time>{formatDate(intervention.date)}</time><b>{intervention.status}</b></div>
-                            <span>{intervention.title || "Intervention"}</span>
-                            {intervention.details && <small>{intervention.details}</small>}
-                            {intervention.cost !== undefined && <small>Coût : {formatCost(intervention.cost)}</small>}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : <span>Aucune intervention associée.</span>}
-                  </section>
-                </div>
-              </details>
-              <details className="road-equipment-details road-equipment-documents">
-                <summary>
-                  Documents
-                  <span>{item.documents.length} document{item.documents.length > 1 ? "s" : ""}</span>
-                </summary>
-                <div className="road-equipment-document-view">
-                  {item.documents.length > 0 ? (
-                    <ul className="road-equipment-document-list">
-                      {item.documents.map((document) => (
-                        <li key={document.id}>
-                          <div>
-                            <strong>{document.name}</strong>
-                            <small>{formatFileSize(document.size)} · ajouté le {formatDate(document.addedAt.slice(0, 10))}</small>
-                          </div>
-                          <div className="road-equipment-document-actions">
-                            <a className="secondary-button" href={document.dataUrl} target="_blank" rel="noreferrer">Consulter</a>
-                            <a className="secondary-button" href={document.dataUrl} download={document.name}>Télécharger</a>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span>Aucun document joint.</span>
-                  )}
-                </div>
-              </details>
-              <div className="road-equipment-actions">
-                <button className="primary-button" type="button" onClick={() => openIntervention(item)}>
-                  + Intervention
-                </button>
-                <button className="secondary-button" type="button" onClick={() => openEdit(item)}>
-                  Modifier
-                </button>
-                <button className="secondary-button" type="button" onClick={() => printEquipment(item.id)}>
-                  Imprimer la fiche
-                </button>
-                <button className="danger-button" type="button" onClick={() => handleDelete(item)}>
-                  Supprimer
-                </button>
+              <div className="equipment-cell equipment-name" data-label="Équipement"><strong>{item.name || item.category}</strong><small>{item.origin === "OSM" ? "Source OSM" : "CommunePilot"}</small></div>
+              <span className="equipment-cell road-equipment-location" data-label="Emplacement"><MapPin /> {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}</span>
+              <span className="equipment-cell" data-label="Catégorie">{item.category}</span>
+              <span className="equipment-cell" data-label="État"><span className="road-equipment-status">{item.status || "Non renseigné"}</span></span>
+              <span className="equipment-cell" data-label="Dernier contrôle">{formatDate(item.lastInspectionDate)}</span>
+              <div className="road-equipment-actions equipment-cell" data-label="Actions">
+                <Link className="secondary-button equipment-open-link" to={`/equipments/${item.id}`}>Ouvrir</Link>
+                <details className="equipment-action-menu"><summary aria-label={`Actions pour ${item.name || item.category}`}><MoreVertical /></summary><div>
+                  {can("equipements", "update") && <button type="button" onClick={() => openIntervention(item)}><Wrench /> Intervention</button>}
+                  {can("equipements", "update") && <button type="button" onClick={() => openEdit(item)}><FilePenLine /> Modifier</button>}
+                  <button type="button" onClick={() => printEquipment(item.id)}><Printer /> Imprimer</button>
+                  {can("equipements", "delete") && <button className="danger" type="button" onClick={() => handleDelete(item)}><Trash2 /> Supprimer</button>}
+                </div></details>
               </div>
             </article>
           )})}
@@ -324,6 +242,13 @@ export default function RoadEquipmentManager() {
           )}
         </div>
       )}
+
+      {!loading && !error && view === "map" && <div className="road-equipment-map">
+        <MapContainer key={`${mapCenter[0]}-${mapCenter[1]}`} center={mapCenter} zoom={14} scrollWheelZoom>
+          <TileLayer attribution="© OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {filtered.map((item) => <CircleMarker key={item.id} center={[item.latitude, item.longitude]} radius={7} pathOptions={{ color: getRoadEquipmentAlerts(item).some((alert) => alert.level === "overdue") ? "#b42318" : "#1769aa", fillOpacity: .85 }}><Popup><strong>{item.name || item.category}</strong><br />{item.category}<br />État : {item.status || "Non renseigné"}<br /><Link to={`/equipments/${item.id}`}>Ouvrir la fiche</Link></Popup></CircleMarker>)}
+        </MapContainer>
+      </div>}
 
       <RoadEquipmentForm
         isOpen={isFormOpen}

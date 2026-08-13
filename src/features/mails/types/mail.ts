@@ -9,6 +9,7 @@ export interface MailAttachment {
   mimeType?: string;
   /** URL locale ou distante fournie par un futur connecteur. Jamais inventée. */
   url?: string;
+  isInline?: boolean;
 }
 
 export interface MailFollowUp {
@@ -24,6 +25,7 @@ export interface MunicipalMail {
   externalId?: string;
   sender: string;
   senderEmail?: string;
+  recipients?: string[];
   subject: string;
   preview: string;
   content: string;
@@ -37,6 +39,9 @@ export interface MunicipalMail {
   internalNotes?: string;
   followUps: MailFollowUp[];
   source: "local" | "gmail" | "outlook";
+  isRead?: boolean;
+  hasAttachments?: boolean;
+  webUrl?: string;
   updatedAt: string;
 }
 

@@ -9,7 +9,6 @@ export default function DossiersPage() {
   const {
     filteredDossiers,
     filters,
-    categories,
     setFilters,
     addDossier,
     updateDossier,
@@ -65,8 +64,7 @@ export default function DossiersPage() {
           <h2>Dossiers</h2>
 
           <p>
-            Créez, recherchez et suivez les dossiers de la
-            mairie.
+            Retrouvez ici les dossiers sans catégorie métier.
           </p>
         </div>
 
@@ -81,7 +79,6 @@ export default function DossiersPage() {
 
       <DossierFilters
         filters={filters}
-        categories={categories}
         onChange={setFilters}
         onReset={resetFilters}
       />
@@ -108,7 +105,7 @@ export default function DossiersPage() {
         </div>
       ) : (
         <div className="empty-state">
-          Aucun dossier ne correspond aux filtres.
+          Aucun dossier non classé ne correspond aux filtres.
         </div>
       )}
 

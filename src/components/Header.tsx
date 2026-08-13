@@ -1,5 +1,7 @@
 import { Bell, Menu } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useIdentity } from "../features/access/LocalIdentityProvider";
+import { useFieldData } from "../features/field/useFieldData";
+import { Link, useLocation } from "react-router-dom";
 import { navigationItems } from "../navigation/navigationItems";
 
 interface HeaderProps {
@@ -7,6 +9,9 @@ interface HeaderProps {
 }
 
 export default function Header({ onOpenMenu }: HeaderProps) {
+  const { user, users, setCurrentUser } = useIdentity();
+  const { notifications } = useFieldData();
+  const unread = notifications.filter((n) => (n.userIds.length === 0 || n.userIds.includes(user.id)) && !n.readBy.includes(user.id)).length;
   const { pathname } = useLocation();
   const currentItem = navigationItems.find((item) =>
     pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(`${item.path}/`)),
@@ -25,15 +30,16 @@ export default function Header({ onOpenMenu }: HeaderProps) {
       </div>
 
       <div className="header-actions">
-        <button className="notification-button" type="button" aria-label="Notifications">
+        <Link className="notification-button" to="/notifications" aria-label="Notifications">
           <Bell size={19} />
-          <span />
-        </button>
+          {unread > 0 && <span title={`${unread} notification(s)`} />}
+        </Link>
         <div className="user-details">
-          <strong>Bernard Boulocher</strong>
-          <span>Mairie de Montrottier</span>
+          <strong>{user.firstName} {user.lastName}</strong>
+          <span>{user.role} · mode local</span>
         </div>
-        <div className="user" aria-label="Compte de Bernard Boulocher">BB</div>
+        <select className="profile-switcher" aria-label="Simuler un profil local" value={user.id} onChange={(e) => setCurrentUser(e.target.value)}>{users.filter((u) => u.active).map((u) => <option value={u.id} key={u.id}>{u.firstName} — {u.role}</option>)}</select>
+        <div className="user" aria-label={`Compte de ${user.firstName} ${user.lastName}`}>{user.firstName[0]}{user.lastName[0]}</div>
       </div>
     </header>
   );

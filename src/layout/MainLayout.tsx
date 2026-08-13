@@ -4,13 +4,15 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import MobileNavigation from "../components/MobileNavigation";
 import "../styles/main.css";
+import { useIdentity } from "../features/access/LocalIdentityProvider";
 
 export default function MainLayout() {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const { user } = useIdentity();
 
   return (
     <div className="layout">
-      <Sidebar isOpen={isNavigationOpen} onClose={() => setIsNavigationOpen(false)} />
+      {user.role !== "Agent technique" && <Sidebar isOpen={isNavigationOpen} onClose={() => setIsNavigationOpen(false)} />}
       <div className="content">
         <Header onOpenMenu={() => setIsNavigationOpen(true)} />
         <main className="page"><Outlet /></main>

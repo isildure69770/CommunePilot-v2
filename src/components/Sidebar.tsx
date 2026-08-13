@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { navigationItems } from "../navigation/navigationItems";
+import { useIdentity } from "../features/access/LocalIdentityProvider";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { can } = useIdentity();
   return (
     <>
       <button
@@ -30,6 +32,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
           {navigationItems.map((item) => {
+            if ("domain" in item && !can(item.domain)) return null;
             const Icon = item.icon;
             return (
               <NavLink

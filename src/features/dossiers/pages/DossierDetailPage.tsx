@@ -1,79 +1,56 @@
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Calendar, Camera, ClipboardList, Download, ExternalLink, FileText, History, Mail, MapPin, Plus, Reply, UserRound } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-
-import { projects as defaultProjects } from "../../../data/projects";
-import { loadProjects } from "../../../services/storage";
-import type { Project } from "../../../types/project";
+import { useIdentity } from "../../access/LocalIdentityProvider";
+import { filesToAttachments } from "../../field/fileUtils";
+import { makeId, missionRepository } from "../../field/repository";
+import type { Mission, MissionPriority } from "../../field/types";
+import { useFieldData } from "../../field/useFieldData";
+import { mailRepository } from "../../mails/services/mailRepository";
+import DossierForm from "../components/DossierForm";
 import { initialDossiers } from "../data/dossiers";
-import { loadDossiers } from "../services/dossierStorage";
+import { getDossierReturnTarget } from "../dossierCategories";
+import { DOSSIER_ACTIVITIES_CHANGED, dossierActivityRepository, type DossierActivityType } from "../services/dossierActivityRepository";
+import { loadDocumentBlob } from "../services/dossierDocumentStorage";
+import { loadDossiers, saveDossiers } from "../services/dossierStorage";
+import type { Dossier, DossierDocument } from "../types/dossier";
 
-function formatDate(value: string) {
-  const date = new Date(
-    value.includes("T") ? value : `${value}T12:00:00`,
-  );
-
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("fr-FR");
+function formatDate(value?: string, time = false) {
+  if (!value) return "Non définie";
+  const date = new Date(value.includes("T") ? value : `${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR", time ? { dateStyle: "medium", timeStyle: "short" } : { dateStyle: "medium" }).format(date);
 }
+function canPreview(document: DossierDocument) { const type=document.mimeType?.toLowerCase()??""; const ext=document.originalName.split(".").pop()?.toLowerCase(); return type==="application/pdf"||type.startsWith("image/")||type.startsWith("text/")||["pdf","png","jpg","jpeg","gif","webp","txt","csv"].includes(ext??""); }
 
 export default function DossierDetailPage() {
-  const { id } = useParams();
-  const dossierId = Number(id);
-  const dossiers = loadDossiers() ?? initialDossiers;
-  const projects: Project[] = loadProjects() ?? defaultProjects;
-  const dossier = dossiers.find((item) => item.id === dossierId);
-  const project = projects.find((item) => item.id === dossierId);
-  const item = dossier ?? project;
+  const { id }=useParams(); const dossierId=Number(id); const {user,users,can}=useIdentity(); const {missions,saveMissions,notify}=useFieldData();
+  const [dossiers,setDossiers]=useState(()=>loadDossiers()??initialDossiers); const dossier=dossiers.find(d=>d.id===dossierId);
+  const [editOpen,setEditOpen]=useState(false); const [missionOpen,setMissionOpen]=useState(false); const [,setActivityVersion]=useState(0); const [filter,setFilter]=useState<"all"|DossierActivityType>("all"); const [openingId,setOpeningId]=useState<string>(); const [message,setMessage]=useState("");
+  useEffect(()=>{const refresh=()=>setActivityVersion(v=>v+1);window.addEventListener(DOSSIER_ACTIVITIES_CHANGED,refresh);return()=>window.removeEventListener(DOSSIER_ACTIVITIES_CHANGED,refresh);},[]);
+  const linkedMissions=missions.filter(m=>m.dossierId===dossierId).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+  const linkedMails=useMemo(()=>mailRepository.getAll().filter(m=>m.dossierId===dossierId).sort((a,b)=>b.receivedAt.localeCompare(a.receivedAt)),[dossierId]);
+  const activities=dossierActivityRepository.list(dossierId).filter(a=>filter==="all"||a.type===filter);
+  if(!dossier)return <section className="dossiers-page"><div className="page-heading"><div><span className="eyebrow">Dossier introuvable</span><h2>Ce dossier n’existe plus</h2></div></div><Link className="secondary-button" to="/dossiers"><ArrowLeft size={16}/> Retour aux dossiers</Link></section>;
+  const back=getDossierReturnTarget(dossier.category);
+  const updateDossier=(value:Omit<Dossier,"id"|"createdAt"|"updatedAt">)=>{const before=dossier;const now=new Date().toISOString();const next=dossiers.map(d=>d.id===dossier.id?{...d,...value,updatedAt:now}:d);setDossiers(next);saveDossiers(next);const changed=["title","category","manager","status","priority","deadline"].filter(k=>before[k as keyof Dossier]!==value[k as keyof typeof value]);if(changed.length)dossierActivityRepository.add({dossierId,type:"dossier",action:"updated",label:`Dossier modifié (${changed.join(", ")})`,authorId:user.id});};
+  const accessDocument=async(doc:DossierDocument,download:boolean)=>{setOpeningId(doc.id);setMessage("");const preview=!download&&canPreview(doc);const win=preview?window.open("","_blank"):null;try{const blob=await loadDocumentBlob(doc.blobKey);if(!blob)throw new Error("Le contenu local de ce document est indisponible.");const url=URL.createObjectURL(blob);if(preview&&win)win.location.href=url;else{const a=document.createElement("a");a.href=url;a.download=doc.originalName;a.click();}setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){win?.close();setMessage(e instanceof Error?e.message:"Ouverture impossible.");}finally{setOpeningId(undefined);}};
+  return <section className="dossier-hub">
+    <div className="page-heading"><div><span className="eyebrow">{dossier.category||"Sans catégorie"}</span><h2>{dossier.title}</h2><p>Centre de suivi opérationnel du dossier.</p></div><div className="page-heading-actions">{can("missions","create")&&<button className="primary-button" onClick={()=>setMissionOpen(true)}><Plus/> Créer une intervention</button>}{can("dossiers","update")&&<button className="secondary-button" onClick={()=>setEditOpen(true)}>Modifier</button>}<Link className="secondary-button" to={back.to}><ArrowLeft/> {back.label}</Link></div></div>
+    <article className="dossier-panel dossier-summary"><header><div><span className="eyebrow">Vue d’ensemble</span><h3>Résumé du dossier</h3></div></header><p className="dossier-description">{dossier.description}</p><div className="dossier-facts"><span><strong>Catégorie</strong>{dossier.category||"Sans catégorie"}</span><span><strong>Responsable</strong>{dossier.manager}</span><span><strong>Statut</strong>{dossier.status}</span><span><strong>Priorité</strong>{dossier.priority}</span><span><strong>Échéance</strong>{formatDate(dossier.deadline)}</span><span><strong>Créé / modifié</strong>{formatDate(dossier.createdAt)} · {formatDate(dossier.updatedAt)}</span></div></article>
+    <div className="dossier-hub-grid">
+      <article className="dossier-panel"><header><div><span className="eyebrow">Pièces du dossier</span><h3>Documents ({dossier.documents?.length??0})</h3></div><FileText/></header>{message&&<p className="mail-error">{message}</p>}{dossier.documents?.length?<ul className="compact-resource-list">{dossier.documents.map(doc=><li key={doc.id}><div><strong>{doc.originalName}</strong><span>{doc.category} · ajouté le {formatDate(doc.addedAt)}</span></div><div className="compact-actions"><button onClick={()=>void accessDocument(doc,false)} disabled={openingId===doc.id}>{canPreview(doc)?<ExternalLink/>:<Download/>} Ouvrir</button><button onClick={()=>void accessDocument(doc,true)}><Download/> Télécharger</button>{doc.sourceMailId&&<Link to={`/mails?mail=${doc.sourceMailId}`}><Reply/> Mail source</Link>}</div></li>)}</ul>:<p className="empty-copy">Aucun document rattaché.</p>}</article>
+      <article className="dossier-panel"><header><div><span className="eyebrow">Correspondance</span><h3>Mails liés ({linkedMails.length})</h3></div><Mail/></header>{linkedMails.length?<ul className="compact-resource-list">{linkedMails.map(mail=><li key={mail.id}><div><strong>{mail.subject}</strong><span>{mail.sender} · {formatDate(mail.receivedAt,true)}</span></div><Link className="resource-open" to={`/mails?mail=${mail.id}`}>Consulter</Link></li>)}</ul>:<p className="empty-copy">Aucun mail rattaché.</p>}</article>
+    </div>
+    <article className="dossier-panel"><header><div><span className="eyebrow">Services techniques</span><h3>Missions / Interventions ({linkedMissions.length})</h3></div><ClipboardList/></header>{linkedMissions.length?<div className="dossier-missions">{linkedMissions.map(m=><article key={m.id} className="dossier-mission"><div className="mission-title-row"><div><span className={`priority priority-${m.priority.toLowerCase()}`}>{m.priority}</span><h4>{m.title}</h4></div><strong>{m.status}</strong></div><p>{m.description}</p><div className="mission-inline-meta"><span><UserRound/> {m.assigneeIds.map(uid=>users.find(u=>u.id===uid)?.firstName).filter(Boolean).join(", ")||"Non affectée"}</span><span><Calendar/> {formatDate(m.dueDate,true)}</span><span><MapPin/> {m.address||"Localisation à préciser"}</span></div>{m.reports.map((r,i)=><div className="report-card" key={`${r.completedAt}-${i}`}><strong>Compte rendu de {users.find(u=>u.id===r.agentId)?.firstName??"l’agent"} · {formatDate(r.completedAt,true)}</strong><p>{r.comment||"Aucune remarque"}</p>{r.photos.length>0&&<div className="dossier-photo-strip">{r.photos.map(p=><a href={p.dataUrl} target="_blank" rel="noreferrer" key={p.id}><img src={p.dataUrl} alt={`${p.phase??"après"} intervention`}/></a>)}</div>}</div>)}</article>)}</div>:<p className="empty-copy">Aucune intervention liée à ce dossier.</p>}</article>
+    <article className="dossier-panel"><header><div><span className="eyebrow">Images opérationnelles</span><h3>Photos</h3></div><Camera/></header>{linkedMissions.flatMap(m=>[...m.attachments.filter(a=>a.kind==="photo"),...m.reports.flatMap(r=>r.photos)]).length?<div className="dossier-photo-grid">{linkedMissions.flatMap(m=>[...m.attachments.filter(a=>a.kind==="photo"),...m.reports.flatMap(r=>r.photos)]).map(photo=><a href={photo.dataUrl} target="_blank" rel="noreferrer" key={photo.id}><img src={photo.dataUrl} alt={photo.name}/><span>{photo.phase??"Photo"}</span></a>)}</div>:<p className="empty-copy">Aucune photo disponible.</p>}</article>
+    <article className="dossier-panel"><header><div><span className="eyebrow">Journal métier</span><h3>Historique</h3></div><History/></header><div className="activity-filters">{([['all','Tous'],['document','Documents'],['mail','Mails'],['mission','Missions']] as const).map(([v,l])=><button className={filter===v?"active":""} onClick={()=>setFilter(v)} key={v}>{l}</button>)}</div><ol className="dossier-timeline">{activities.map(a=><li key={a.id}><span className={`timeline-icon ${a.type}`}/><div><strong>{a.label}</strong><small>{formatDate(a.timestamp,true)} · {users.find(u=>u.id===a.authorId)?.firstName??"Système"}</small></div></li>)}{activities.length===0&&<li className="history-start"><div><strong>Historique détaillé disponible à partir de cette fonctionnalité.</strong><small>Création certaine du dossier : {formatDate(dossier.createdAt,true)}</small></div></li>}</ol></article>
+    <DossierForm isOpen={editOpen} dossier={dossier} onClose={()=>setEditOpen(false)} onSubmit={updateDossier}/>
+    {missionOpen&&<MissionModal dossier={dossier} agents={users.filter(u=>u.active&&u.role==="Agent technique")} onClose={()=>setMissionOpen(false)} onCreate={mission=>{saveMissions([mission,...missionRepository.list()]);dossierActivityRepository.add({dossierId,type:"mission",action:"created",label:`${user.firstName} a créé la mission ${mission.title}`,authorId:user.id,missionId:mission.id});notify({userIds:mission.assigneeIds,title:"Nouvelle mission",message:mission.title,link:"/terrain"});setMissionOpen(false);}}/>}
+  </section>;
+}
 
-  if (!item) {
-    return (
-      <section className="dossiers-page">
-        <div className="page-heading">
-          <div>
-            <span className="eyebrow">Dossier introuvable</span>
-            <h2>Ce dossier n’existe plus</h2>
-            <p>Il a peut-être été supprimé depuis le tableau de bord.</p>
-          </div>
-        </div>
-
-        <Link className="secondary-button" to="/dossiers">
-          <ArrowLeft size={16} /> Retour aux dossiers
-        </Link>
-      </section>
-    );
-  }
-
-  return (
-    <section className="dossiers-page dossier-detail-page">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">{item.category}</span>
-          <h2>{item.title}</h2>
-          <p>Fiche de suivi du dossier municipal.</p>
-        </div>
-
-        <Link className="secondary-button" to="/dossiers">
-          <ArrowLeft size={16} /> Tous les dossiers
-        </Link>
-      </div>
-
-      <article className="dashboard-card">
-        {dossier && <p>{dossier.description}</p>}
-
-        <div className="project-details">
-          <p><strong>Responsable :</strong> {item.manager}</p>
-          <p><strong>Statut :</strong> {item.status}</p>
-          <p><strong>Priorité :</strong> {item.priority}</p>
-          <p><strong>Échéance :</strong> {formatDate(item.deadline)}</p>
-          {dossier && (
-            <>
-              <p><strong>Créé le :</strong> {formatDate(dossier.createdAt)}</p>
-              <p><strong>Mis à jour le :</strong> {formatDate(dossier.updatedAt)}</p>
-            </>
-          )}
-        </div>
-      </article>
-    </section>
-  );
+function MissionModal({dossier,agents,onClose,onCreate}:{dossier:Dossier;agents:{id:string;firstName:string;lastName:string}[];onClose():void;onCreate(m:Mission):void}){
+ const [form,setForm]=useState({title:"",description:"",address:"",priority:"Normale" as MissionPriority,dueDate:"",assigneeIds:[] as string[],attachments:[] as Mission["attachments"]});
+ const submit=(e:React.FormEvent)=>{e.preventDefault();if(!form.assigneeIds.length)return;const now=new Date().toISOString();onCreate({...form,id:makeId("mission"),category:dossier.category||"Autre",dossierId:dossier.id,status:"À faire",reports:[],history:[],createdAt:now,updatedAt:now});};
+ return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal mission-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">Dossier #{dossier.id}</span><h3>Créer une intervention</h3></div><button className="icon-button" onClick={onClose}>×</button></div><form className="field-form" onSubmit={submit}><label>Titre<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>Consigne<textarea required rows={3} value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><label>Adresse / localisation<input value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></label><div className="form-row"><label>Priorité<select value={form.priority} onChange={e=>setForm({...form,priority:e.target.value as MissionPriority})}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label><label>Échéance<input type="datetime-local" value={form.dueDate} onChange={e=>setForm({...form,dueDate:e.target.value})}/></label></div><fieldset><legend>Agents techniques</legend>{agents.map(a=><label className="toggle-row" key={a.id}><input type="checkbox" checked={form.assigneeIds.includes(a.id)} onChange={e=>setForm({...form,assigneeIds:e.target.checked?[...form.assigneeIds,a.id]:form.assigneeIds.filter(id=>id!==a.id)})}/>{a.firstName} {a.lastName}</label>)}</fieldset><label>Photos et documents utiles<input type="file" multiple onChange={async e=>setForm({...form,attachments:[...form.attachments,...await filesToAttachments(e.target.files,"document")]})}/></label><p className="locked-context">Dossier lié : <strong>{dossier.title}</strong></p><div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Annuler</button><button className="primary-button" disabled={!form.assigneeIds.length}>Créer et notifier</button></div></form></div></div>;
 }
