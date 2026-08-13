@@ -1,5 +1,6 @@
 import {
   Building2,
+  ClipboardList,
   FlagTriangleRight,
   Grid2X2,
   Layers3,
@@ -10,8 +11,10 @@ import {
   TriangleAlert,
   Wrench,
 } from "lucide-react";
+import type { CustomMapLayer } from "../types/customLayer";
 
 interface MapLayerControlsProps {
+  compact?: boolean;
   showBoundary: boolean;
   showRoads: boolean;
   showHamlets: boolean;
@@ -21,6 +24,7 @@ interface MapLayerControlsProps {
   showRoadEquipment: boolean;
   showSignalements: boolean;
   showChantiers: boolean;
+  showMissions: boolean;
 
   onToggleBoundary: () => void;
   onToggleRoads: () => void;
@@ -31,8 +35,11 @@ interface MapLayerControlsProps {
   onToggleRoadEquipment: () => void;
   onToggleSignalements: () => void;
   onToggleChantiers: () => void;
+  onToggleMissions: () => void;
 
   onReset: () => void;
+  customLayers?: CustomMapLayer[];
+  onToggleCustomLayer?: (id: string) => void;
 }
 
 export default function MapLayerControls(
@@ -103,8 +110,8 @@ export default function MapLayerControls(
     },
 
     {
-      label: "Signalements",
-      detail: "Incidents enregistrés",
+      label: "Problèmes terrain",
+      detail: "Signalements colorés par urgence",
       active: props.showSignalements,
       toggle: props.onToggleSignalements,
       icon: TriangleAlert,
@@ -119,6 +126,14 @@ export default function MapLayerControls(
       icon: Wrench,
       tone: "works",
     },
+    {
+      label: "Missions agents",
+      detail: "Prise en compte et avancement",
+      active: props.showMissions,
+      toggle: props.onToggleMissions,
+      icon: ClipboardList,
+      tone: "missions",
+    },
   ];
 
   const activeCount =
@@ -128,7 +143,7 @@ export default function MapLayerControls(
 
   return (
     <section
-      className="map-layer-controls"
+      className={`map-layer-controls ${props.compact ? "is-compact" : ""}`}
       aria-label="Couches cartographiques"
     >
       <div className="map-layer-controls-heading">
@@ -216,6 +231,7 @@ export default function MapLayerControls(
             );
           },
         )}
+        {props.customLayers?.map((layer) => <button key={layer.id} className={`map-layer-toggle ${layer.visible ? "is-active" : ""}`} type="button" role="switch" aria-checked={layer.visible} onClick={() => props.onToggleCustomLayer?.(layer.id)}><span className="map-layer-icon" style={{ color: layer.color }}><Layers3 size={17} /></span><span className="map-layer-copy"><strong>{layer.name}</strong><small>Couche métier{layer.year ? ` · ${layer.year}` : ""}</small></span><span className="map-layer-switch" aria-hidden="true"><span /></span></button>)}
       </div>
     </section>
   );

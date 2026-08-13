@@ -3,19 +3,23 @@ import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 
 import {
+  CircleMarker,
   MapContainer,
   Marker,
+  Polyline,
   Popup,
   TileLayer,
 } from "react-leaflet";
 
 import L from "leaflet";
+import { useNavigate } from "react-router-dom";
 
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker from "leaflet/dist/images/marker-icon.png";
 import shadow from "leaflet/dist/images/marker-shadow.png";
 
 import MapClickHandler from "./MapClickHandler";
+import MapDrawingHandler from "./MapDrawingHandler";
 import MapLayerControls from "./MapLayerControls";
 
 import CommuneBoundaryLayer from "../../../reference/commune/layers/CommuneBoundaryLayer";
@@ -29,6 +33,7 @@ import RoadEquipmentLayer from "../../../reference/road-equipment/layers/RoadEqu
 import type {
   CommuneMapMarker,
 } from "../hooks/useCommuneMap";
+import { STATUS_COLORS, STATUS_LABELS, type CustomMapLayer, type CustomMapSection } from "../types/customLayer";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 
@@ -52,18 +57,47 @@ interface CommuneMapProps {
 
   zoom?: number;
   height?: number;
+  compactControls?: boolean;
+  showTerrainProblemsInitially?: boolean;
 
   selectedPosition?: SelectedPosition | null;
+  customLayers?: CustomMapLayer[];
+  customSections?: CustomMapSection[];
+  drawingCoordinates?: Array<[number, number]>;
+  waypointCoordinates?: Array<[number, number]>;
+  drawingColor?: string;
+  onDrawingPoint?: (latitude: number, longitude: number) => void;
+  onRemoveCustomSection?: (id: string) => void;
+  onToggleCustomLayer?: (id: string) => void;
 
   onMapClick?: (
     latitude: number,
     longitude: number,
     location?: string,
   ) => void;
+  onCreateAtPosition?: (kind: "signalement" | "chantier" | "mission") => void;
 }
 
-const DEFAULT_LATITUDE = 45.790833;
-const DEFAULT_LONGITUDE = 4.4675;
+const PRIORITY_COLORS: Record<string, string> = { Faible: "#48a56f", Basse: "#48a56f", Normale: "#3f83c5", Haute: "#e09a35", Urgente: "#d84f4f" };
+
+function terrainProblemIcon(priority: string) {
+  const color = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Normale;
+  const size = priority === "Urgente" ? 32 : 28;
+  return L.divIcon({ className: "terrain-problem-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 32 29"><path style="fill:${color}" d="M16 1.5 30.5 27H1.5L16 1.5Z"/><path class="warning-border" d="M16 1.5 30.5 27H1.5L16 1.5Z"/><path class="warning-mark" d="M16 9v9M16 22.5v.2"/></svg></span>`, iconSize: [size, size], iconAnchor: [size - 2, size - 2], popupAnchor: [-size / 2, -size + 2] });
+}
+
+function missionAgentIcon(priority: string) {
+  const color = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Normale;
+  return L.divIcon({ className: "mission-agent-marker", html: `<span style="background:${color}" aria-hidden="true"><svg viewBox="0 0 26 28"><path class="helmet" d="M7 10a6 6 0 0 1 12 0M5 11h16"/><circle cx="13" cy="14" r="3.5"/><path d="M6.5 25c.5-4.5 2.7-6.7 6.5-6.7s6 2.2 6.5 6.7M13 18.5V25"/><path class="vest" d="m9.5 19.2 3.5 3 3.5-3"/></svg></span>`, iconSize: [26, 28], iconAnchor: [13, 14], popupAnchor: [0, -18] });
+}
+
+function chantierConeIcon() {
+  return L.divIcon({ className: "chantier-cone-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 32 36"><path class="cone" d="M16 2 25 29H7L16 2Z"/><path class="stripe" d="m11.2 16 9.6 0 2 6H9.2l2-6Z"/><path class="base" d="M4 28h24l2 5H2l2-5Z"/></svg></span>`, iconSize: [32, 36], iconAnchor: [4, 33], popupAnchor: [12, -31] });
+}
+
+// Mairie de Montrottier — point townhall issu des données OSM locales.
+const DEFAULT_LATITUDE = 45.7900455;
+const DEFAULT_LONGITUDE = 4.4662948;
 
 export default function CommuneMap({
   markers,
@@ -71,9 +105,21 @@ export default function CommuneMap({
   centerLongitude = DEFAULT_LONGITUDE,
   zoom = 15,
   height = 650,
+  compactControls = false,
+  showTerrainProblemsInitially = false,
   selectedPosition = null,
+  customLayers = [],
+  customSections = [],
+  drawingCoordinates = [],
+  waypointCoordinates = [],
+  drawingColor = "#16a34a",
+  onDrawingPoint,
+  onRemoveCustomSection,
+  onToggleCustomLayer,
   onMapClick,
+  onCreateAtPosition,
 }: CommuneMapProps) {
+  const navigate = useNavigate();
   const [
     showBoundary,
     setShowBoundary,
@@ -112,12 +158,13 @@ export default function CommuneMap({
   const [
     showSignalements,
     setShowSignalements,
-  ] = useState(false);
+  ] = useState(showTerrainProblemsInitially);
 
   const [
     showChantiers,
     setShowChantiers,
   ] = useState(false);
+  const [showMissions, setShowMissions] = useState(showTerrainProblemsInitially);
 
   function resetToBoundaryOnly() {
     setShowBoundary(true);
@@ -129,6 +176,7 @@ export default function CommuneMap({
     setShowRoadEquipment(false);
     setShowSignalements(false);
     setShowChantiers(false);
+    setShowMissions(false);
   }
 
   const visibleMarkers =
@@ -153,6 +201,7 @@ export default function CommuneMap({
       ) {
         return false;
       }
+      if (mapMarker.type === "mission" && !showMissions) return false;
 
       return true;
     });
@@ -160,6 +209,7 @@ export default function CommuneMap({
   return (
     <div className="commune-map-wrapper">
       <MapLayerControls
+        compact={compactControls}
         showBoundary={showBoundary}
         showRoads={showRoads}
         showHamlets={showHamlets}
@@ -169,6 +219,7 @@ export default function CommuneMap({
         showRoadEquipment={showRoadEquipment}
         showSignalements={showSignalements}
         showChantiers={showChantiers}
+        showMissions={showMissions}
 
         onToggleBoundary={() =>
           setShowBoundary(
@@ -232,6 +283,10 @@ export default function CommuneMap({
               !currentValue,
           )
         }
+        onToggleMissions={() => setShowMissions((currentValue) => !currentValue)}
+
+        customLayers={customLayers.filter((layer) => layer.active && !layer.archived)}
+        onToggleCustomLayer={onToggleCustomLayer}
 
         onReset={resetToBoundaryOnly}
       />
@@ -248,7 +303,11 @@ export default function CommuneMap({
             centerLongitude,
           ]}
           zoom={zoom}
-          scrollWheelZoom
+          scrollWheelZoom={false}
+          doubleClickZoom={false}
+          touchZoom={false}
+          boxZoom={false}
+          keyboard={false}
           style={{
             width: "100%",
             height: "100%",
@@ -287,14 +346,34 @@ export default function CommuneMap({
             <RoadEquipmentLayer />
           )}
 
-          {onMapClick && (
+          {onDrawingPoint ? (
+            <MapDrawingHandler onPoint={onDrawingPoint} />
+          ) : onMapClick && (
             <MapClickHandler
               onSelect={onMapClick}
             />
           )}
 
+          {customSections.map((section) => {
+            const layer = customLayers.find((item) => item.id === section.layerId);
+            if (!layer) return null;
+            return (
+              <Polyline key={section.id} positions={section.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number])} pathOptions={{ color: STATUS_COLORS[section.status], weight: 7, opacity: 0.88, dashArray: section.status === "a-faire" ? "10 8" : undefined }}>
+                <Popup><div className="map-popup-content"><strong>{section.name}</strong><span>Couche : {layer.name}</span><span>{Math.round(section.lengthMeters).toLocaleString("fr-FR")} m de voie · {Math.round(section.businessLengthMeters).toLocaleString("fr-FR")} ml métier</span><span>Statut : {STATUS_LABELS[section.status]}</span>{section.completionDate && <span>Date : {new Date(`${section.completionDate}T12:00:00`).toLocaleDateString("fr-FR")}</span>}{section.assignee && <span>Réalisé par : {section.assignee}</span>}{section.notes && <p>{section.notes}</p>}<a className="secondary-button compact-button" href={`/voirie/couches-metier?layer=${layer.id}`}>Ouvrir</a>{onRemoveCustomSection && <button className="danger-button" type="button" onClick={() => { if (window.confirm("Supprimer cette portion ?")) onRemoveCustomSection(section.id); }}>Supprimer la portion</button>}</div></Popup>
+              </Polyline>
+            );
+          })}
+
+          {drawingCoordinates.length > 0 && <>
+            <Polyline positions={drawingCoordinates} pathOptions={{ color: drawingColor, weight: 8, dashArray: "8 8" }} />
+            {drawingCoordinates.map((position, index) => <CircleMarker key={`${position[0]}-${position[1]}-${index}`} center={position} radius={5} pathOptions={{ color: drawingColor, fillColor: "white", fillOpacity: 1 }} />)}
+          </>}
+
+          {waypointCoordinates.map((position, index) => <CircleMarker key={`waypoint-${position[0]}-${position[1]}-${index}`} center={position} radius={9} pathOptions={{ color: drawingColor, fillColor: index === 0 ? "#22c55e" : index === waypointCoordinates.length - 1 ? "#ef4444" : "#f59e0b", fillOpacity: 1, weight: 3 }}><Popup>{index === 0 ? "Départ" : index === waypointCoordinates.length - 1 ? "Arrivée" : `Point de passage ${index}`}</Popup></CircleMarker>)}
+
           {selectedPosition && (
             <Marker
+              ref={(instance) => { instance?.openPopup(); }}
               position={[
                 selectedPosition.latitude,
                 selectedPosition.longitude,
@@ -313,10 +392,7 @@ export default function CommuneMap({
                     </span>
                   )}
 
-                  <span>
-                    Cliquez sur « Créer un
-                    signalement » pour continuer.
-                  </span>
+                  {onCreateAtPosition && <div className="map-popup-actions"><button type="button" onClick={() => onCreateAtPosition("signalement")}>⚠️ Signalement</button><button type="button" onClick={() => onCreateAtPosition("chantier")}>🚧 Chantier</button><button type="button" onClick={() => onCreateAtPosition("mission")}>📋 Mission</button></div>}
 
                   <span>
                     Latitude :{" "}
@@ -337,7 +413,15 @@ export default function CommuneMap({
           )}
 
           {visibleMarkers.map(
-            (mapMarker) => (
+            (mapMarker) => mapMarker.type === "signalement" ? (
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={terrainProblemIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover>
+                <Popup><div className="map-popup-content"><strong>⚠️ {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Problème terrain</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.description&&<p>{mapMarker.description}</p>}<button className="primary-button compact-button" type="button" onClick={() => navigate(`/signalements?signalement=${mapMarker.sourceId}`)}>Ouvrir la fiche</button></div></Popup>
+              </Marker>
+            ) : mapMarker.type === "mission" ? (
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={missionAgentIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>👷 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Mission agent</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.description&&<p>{mapMarker.description}</p>}</div></Popup></Marker>
+            ) : mapMarker.type === "chantier" ? (
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={chantierConeIcon()} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>🚧 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Chantier</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.description&&<p>{mapMarker.description}</p>}</div></Popup></Marker>
+            ) : (
               <Marker
                 key={mapMarker.id}
                 position={[
@@ -349,9 +433,6 @@ export default function CommuneMap({
                   <div className="map-popup-content">
                     <strong>
                       {mapMarker.type ===
-                      "chantier"
-                        ? "🚧"
-                        : mapMarker.type ===
                             "intervention"
                           ? "🔧"
                           : "⚠️"}{" "}
@@ -365,9 +446,6 @@ export default function CommuneMap({
                     <span>
                       Type :{" "}
                       {mapMarker.type ===
-                      "chantier"
-                        ? "Chantier"
-                        : mapMarker.type ===
                             "intervention"
                           ? "Intervention"
                           : "Signalement"}

@@ -5,6 +5,8 @@ import type { Signalement } from "../../signalements/types/signalement";
 import type {
   EquipmentIntervention,
 } from "../../equipments/services/equipmentInterventions";
+import { missionRepository } from "../../field/repository";
+import type { Mission } from "../../field/types";
 
 const CHANTIERS_STORAGE_KEY = "communepilot-chantiers";
 const SIGNALEMENTS_STORAGE_KEY = "communepilot-signalements";
@@ -59,6 +61,7 @@ export interface CommuneMapMarker {
   type:
     | "chantier"
     | "signalement"
+    | "mission"
     | "intervention";
 
   title: string;
@@ -82,6 +85,7 @@ export function useCommuneMap() {
 
   const [signalements, setSignalements] =
     useState<Signalement[]>([]);
+  const [missions, setMissions] = useState<Mission[]>([]);
 
   const [
     interventionMarkers,
@@ -227,6 +231,7 @@ export function useCommuneMap() {
     setSignalements(
       loadSignalements(),
     );
+    setMissions(missionRepository.list());
 
     void loadInterventionMarkers();
   }
@@ -238,6 +243,7 @@ export function useCommuneMap() {
       refresh();
     }
 
+    window.addEventListener("communepilot:missions", refresh);
     window.addEventListener(
       "storage",
       handleStorage,
@@ -248,6 +254,7 @@ export function useCommuneMap() {
         "storage",
         handleStorage,
       );
+      window.removeEventListener("communepilot:missions", refresh);
     };
   }, []);
 
@@ -340,15 +347,19 @@ export function useCommuneMap() {
               }),
             );
 
+        const missionMarkers = missions.filter((mission) => hasValidCoordinates(mission.latitude, mission.longitude) && !mission.archivedAt).map((mission): CommuneMapMarker => ({ id: `mission-${mission.id}`, sourceId: mission.id, type: "mission", title: mission.title, location: mission.address, latitude: mission.latitude!, longitude: mission.longitude!, status: mission.status, priority: mission.priority, description: mission.description, date: mission.updatedAt }));
+
         return [
           ...chantierMarkers,
           ...signalementMarkers,
+          ...missionMarkers,
           ...interventionMarkers,
         ];
       },
       [
         chantiers,
         signalements,
+        missions,
         interventionMarkers,
       ],
     );

@@ -1,4 +1,4 @@
-export type DossierActivityType = "dossier" | "document" | "mail" | "mission";
+export type DossierActivityType = "dossier" | "document" | "mail" | "mission" | "calendar";
 
 export interface DossierActivity {
   id: string;
@@ -11,6 +11,7 @@ export interface DossierActivity {
   documentId?: string;
   mailId?: number;
   missionId?: string;
+  calendarEventId?: string;
 }
 
 const STORAGE_KEY = "communepilot-dossier-activities-v1";

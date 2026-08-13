@@ -42,6 +42,12 @@ import {
   UNKNOWN_CATEGORY_LABEL,
 } from "../features/dossiers/dossierCategories";
 import { useSignalements } from "../features/signalements/hooks/useSignalements";
+import { useIdentity } from "../features/access/LocalIdentityProvider";
+import { useFieldData } from "../features/field/useFieldData";
+import { CALENDAR_CHANGED, calendarRepository } from "../features/calendar/services/calendarRepository";
+import { buildCalendarItems, canSeeCalendarItem } from "../features/calendar/services/calendarIntegration";
+import { processCalendarReminders } from "../features/calendar/services/calendarNotifications";
+import { COMMISSIONS, isInCommission } from "../features/commissions/commissions";
 
 const shortcuts = [
   { label: "Mails", detail: "Boîte municipale", icon: Mail, path: "/mails", tone: "blue" },
@@ -57,6 +63,8 @@ interface RecentEquipmentIntervention
   equipmentName: string;
 }
 export default function Dashboard() {
+  const { user } = useIdentity();
+  const { missions } = useFieldData();
   const { mails } = useMails();
   const { account } = useMicrosoftAuth();
   const { equipment: roadEquipment } = useRoadEquipment();
@@ -64,6 +72,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [dossiers, setDossiers] = useState(() => loadDossiers() ?? initialDossiers);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [calendarEvents, setCalendarEvents] = useState(calendarRepository.list);
   const [
   recentInterventions,
   setRecentInterventions,
@@ -203,6 +212,8 @@ useEffect(() => {
   };
 }, []);
 
+  useEffect(() => { processCalendarReminders(); const refresh = () => setCalendarEvents(calendarRepository.list()); window.addEventListener(CALENDAR_CHANGED, refresh); return () => window.removeEventListener(CALENDAR_CHANGED, refresh); }, []);
+
   useEffect(() => {
     saveDossiers(dossiers);
   }, [dossiers]);
@@ -239,14 +250,22 @@ useEffect(() => {
   const inProgressCount = mails.filter((mail) => mail.status === "En cours").length;
   const today = new Date().toISOString().slice(0, 10);
   const inFifteenDays = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
-  const upcomingDossiers = dossiers.filter((dossier) => dossier.status !== "Terminé" && dossier.deadline >= today && dossier.deadline <= inFifteenDays);
   const overdueDossiers = dossiers.filter((dossier) => dossier.status !== "Terminé" && dossier.deadline < today);
+  const calendarItems = useMemo(() => buildCalendarItems(calendarEvents, missions, dossiers, roadEquipment).filter((item) => canSeeCalendarItem(item, user)), [calendarEvents, missions, dossiers, roadEquipment, user]);
+  const upcomingCalendar = calendarItems.filter((item) => item.status !== "Annulé" && item.endAt >= new Date().toISOString()).slice(0, 6);
+  const upcomingInFifteenDays = calendarItems.filter((item) => item.status !== "Annulé" && item.startAt.slice(0, 10) >= today && item.startAt.slice(0, 10) <= inFifteenDays);
   const stats = [
     { title: "Mails", value: toProcessCount, tone: "blue", icon: Mail, path: "/mails", detail: account ? "Outlook connecté · à traiter" : "Message(s) à traiter" },
     { title: "Dossiers", value: dossiers.length, tone: "green", icon: FolderKanban, path: "/dossiers", detail: `${categorizedProjects.length} classé${categorizedProjects.length > 1 ? "s" : ""} · ${dossiers.length - categorizedProjects.length} non classé${dossiers.length - categorizedProjects.length > 1 ? "s" : ""}` },
     { title: "À traiter", value: signalements.filter((item) => item.status !== "Résolu" && item.status !== "Classé").length + roadAlerts.length, tone: "orange", icon: TriangleAlert, path: "/signalements", detail: "Signalements et alertes terrain" },
-    { title: "Événements", value: upcomingDossiers.length, tone: "violet", icon: CalendarClock, path: "/calendrier", detail: overdueDossiers.length ? `${overdueDossiers.length} échéance(s) dépassée(s)` : "Dans les 15 prochains jours" },
+    { title: "Événements", value: upcomingInFifteenDays.length, tone: "violet", icon: CalendarClock, path: "/calendrier", detail: overdueDossiers.length ? `${overdueDossiers.length} échéance(s) dossier dépassée(s)` : "Dans les 15 prochains jours" },
   ];
+  const commissionCards = COMMISSIONS.map((commission) => {
+    const commissionDossiers = dossiers.filter((item) => isInCommission(item.category, commission));
+    const commissionMissions = missions.filter((item) => isInCommission(item.category, commission));
+    const commissionSignalements = signalements.filter((item) => isInCommission(item.category, commission));
+    return { ...commission, active: commissionDossiers.filter((item) => item.status !== "Terminé").length, missions: commissionMissions.filter((item) => item.status !== "Terminée" && item.status !== "Annulée").length, alerts: commissionSignalements.filter((item) => item.status !== "Résolu" && item.status !== "Classé").length };
+  });
 
   const activeSignalements = signalements
     .filter((item) => item.status !== "Résolu" && item.status !== "Classé")
@@ -258,8 +277,9 @@ useEffect(() => {
       ...dossiers.filter((item) => [item.title, item.category, item.manager, item.status].some((value) => value.toLocaleLowerCase("fr").includes(query))).map((item) => ({ id: `d-${item.id}`, title: item.title, detail: `Dossier · ${item.status}`, path: `/dossiers/${item.id}` })),
       ...mails.filter((item) => [item.subject, item.sender, item.status].some((value) => value.toLocaleLowerCase("fr").includes(query))).map((item) => ({ id: `m-${item.id}`, title: item.subject, detail: `Mail · ${item.sender}`, path: `/mails?mail=${item.id}` })),
       ...signalements.filter((item) => [item.title, item.location, item.category, item.status].some((value) => value.toLocaleLowerCase("fr").includes(query))).map((item) => ({ id: `s-${item.id}`, title: item.title, detail: `Signalement · ${item.location}`, path: "/signalements" })),
+      ...calendarItems.filter((item) => [item.title,item.description,item.location,item.category].some((value)=>value.toLocaleLowerCase("fr").includes(query))).map((item)=>({id:`c-${item.id}`,title:item.title,detail:`Calendrier · ${new Date(item.startAt).toLocaleDateString("fr-FR")}`,path:`/calendrier?event=${item.id}`})),
     ].slice(0, 6);
-  }, [dossiers, mails, search, signalements]);
+  }, [dossiers, mails, search, signalements, calendarItems]);
 
   return (
     <section className="dashboard-page dashboard-home">
@@ -269,6 +289,8 @@ useEffect(() => {
       </div>
 
       <div className="dashboard-global-search"><Search aria-hidden="true" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher un dossier, un mail ou un signalement…" aria-label="Recherche globale" />{search && <button type="button" onClick={() => setSearch("")}>Effacer</button>}{search && <div className="dashboard-search-results">{searchResults.map((result) => <Link key={result.id} to={result.path}><div><strong>{result.title}</strong><span>{result.detail}</span></div><ArrowRight /></Link>)}{searchResults.length === 0 && <p>Aucun résultat dans les données disponibles.</p>}</div>}</div>
+
+      <section className="commission-picker" aria-labelledby="commission-picker-title"><div className="section-heading"><div><span className="section-kicker">Espaces de travail</span><h3 id="commission-picker-title">Choisir une commission</h3><p>Accédez aux données existantes, automatiquement filtrées par commission.</p></div></div><div className="commission-picker-grid">{commissionCards.map((commission)=>{const Icon=commission.icon;return <Link className={`commission-choice commission-choice-${commission.tone}`} to={commission.route} key={commission.id}><span className="commission-choice-icon"><Icon/></span><div className="commission-choice-copy"><strong>{commission.label}</strong><small>{commission.description}</small></div><div className="commission-choice-counts"><span><b>{commission.active}</b> actif{commission.active>1?"s":""}</span><span><b>{commission.missions}</b> mission{commission.missions>1?"s":""}</span><span><b>{commission.alerts}</b> signalement{commission.alerts>1?"s":""}</span></div><ArrowRight className="commission-choice-arrow"/></Link>})}</div></section>
 
       <StatsGrid stats={stats} />
 
@@ -316,6 +338,7 @@ useEffect(() => {
       <section className="shortcuts-section"><div className="section-heading"><div><span className="section-kicker green">Raccourcis</span><h3>Accès rapides</h3><p>Les fonctions les plus utiles, à portée de main.</p></div></div><div className="shortcut-grid">{shortcuts.map((item) => { const Icon = item.icon; return <Link key={item.label} className={`shortcut-${item.tone}`} to={item.path}><span><Icon /></span><div><strong>{item.label}</strong><small>{item.detail}</small></div><ArrowRight /></Link>; })}</div></section>
 
       <div className="dashboard-feed-grid">
+        <section className="dashboard-card activity-card dashboard-calendar-card"><div className="section-heading"><div><h3>Prochains événements</h3><p>Données réelles du calendrier</p></div><CalendarClock size={20}/></div><div className="compact-feed">{upcomingCalendar.slice(0,4).map((item)=><Link to={`/calendrier?event=${item.id}`} key={item.id}><span className="feed-icon" style={{color:item.color}}><CalendarClock/></span><div><strong>{item.title}</strong><p>{new Date(item.startAt).toLocaleString("fr-FR",item.allDay?{dateStyle:"short"}:{dateStyle:"short",timeStyle:"short"})} · {item.type}</p></div></Link>)}{!upcomingCalendar.length&&<article><span className="feed-icon"><CalendarClock/></span><div><strong>Aucun événement à venir</strong><p>Créez un événement dans le calendrier municipal.</p></div></article>}</div><Link className="text-link" to="/calendrier">Ouvrir le calendrier <ArrowRight size={15}/></Link></section>
         <section className="dashboard-card activity-card road-equipment-dashboard-alerts">
           <div className="section-heading"><div><h3>Alertes patrimoine voirie</h3><p>{roadAlerts.length} priorité{roadAlerts.length > 1 ? "s" : ""} à surveiller</p></div><CalendarClock size={20} /></div>
           <div className="compact-feed">

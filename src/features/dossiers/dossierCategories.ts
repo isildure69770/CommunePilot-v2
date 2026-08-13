@@ -1,4 +1,5 @@
 import type { Dossier } from "./types/dossier";
+import { COMMISSIONS, getCommission } from "../commissions/commissions";
 
 export const DOSSIER_CATEGORIES = [
   "Voirie",
@@ -38,5 +39,9 @@ const CATEGORY_ROUTES: Record<string, { label: string; to: string }> = {
 
 export function getDossierReturnTarget(category?: string) {
   const normalized = normalizeDossierCategory(category);
+  const commission = getCommission(normalized);
+  if (commission) return { label: `Retour à ${commission.label}`, to: commission.route };
   return CATEGORY_ROUTES[normalized] ?? { label: "Dossiers non classés", to: "/dossiers" };
 }
+
+export const COMMISSION_CATEGORIES = COMMISSIONS.map((commission) => commission.category);

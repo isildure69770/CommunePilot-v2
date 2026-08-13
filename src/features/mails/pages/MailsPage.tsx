@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Archive, Check, CirclePlus, Download, FilePlus2, FolderOpen, Link2, LogOut, Mail, Paperclip, RefreshCw, Search, Trash2, X } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { initialDossiers } from "../../dossiers/data/dossiers";
 import { deleteDocumentBlob, saveDocumentBlob } from "../../dossiers/services/dossierDocumentStorage";
 import { loadDossiers, saveDossiers } from "../../dossiers/services/dossierStorage";
@@ -38,6 +38,7 @@ export default function MailsPage() {
   const [followUpDueDate, setFollowUpDueDate] = useState("");
   const [notice, setNotice] = useState("");
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalMode, setAddModalMode] = useState<"new" | "existing">("existing");
   const [addingDocuments, setAddingDocuments] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -92,11 +93,11 @@ export default function MailsPage() {
     setNotice("");
   }
 
-  async function addAttachments(value: { mode: "new" | "existing"; dossierId?: number; title: string; description: string; selections: AttachmentSelection[] }) {
-    if (!selected?.externalId || selected.source !== "outlook") return;
+  async function addAttachments(value: { mode: "new" | "existing"; dossierId?: number; dossier: Omit<Dossier, "id" | "createdAt" | "updatedAt" | "documents">; selections: AttachmentSelection[] }) {
+    if (!selected || (value.mode === "new" && !can("dossiers", "create"))) return;
     setAddingDocuments(true); setAddError("");
     const now = new Date().toISOString();
-    const targetId = value.mode === "new" ? Date.now() : value.dossierId;
+    const targetId = value.mode === "new" ? Math.max(Date.now(), ...dossiers.map((item) => item.id + 1)) : value.dossierId;
     const target = value.mode === "new" ? undefined : dossiers.find((item) => item.id === targetId);
     if (!targetId || (value.mode === "existing" && !target)) { setAddError("Le dossier sélectionné n’existe plus."); setAddingDocuments(false); return; }
     const existingDocuments = target?.documents ?? [];
@@ -106,6 +107,7 @@ export default function MailsPage() {
     try {
       const documents: DossierDocument[] = [];
       for (const selection of value.selections) {
+        if (!selected.externalId || selected.source !== "outlook" || !account) throw new Error("Le contenu réel de cette pièce jointe n’est pas disponible. Reconnectez le compte Outlook source puis réessayez.");
         const attachment = selected.attachments.find((item) => item.id === selection.attachmentId);
         if (!attachment) throw new Error("Une pièce jointe sélectionnée n’est plus disponible.");
         const blob = await fetchAttachment(selected.externalId, attachment.id);
@@ -114,12 +116,12 @@ export default function MailsPage() {
         await saveDocumentBlob(blobKey, blob); storedKeys.push(blobKey);
         documents.push({ id: documentId, originalName: attachment.name, category: selection.category, mimeType: attachment.mimeType || blob.type || undefined, size: attachment.size ?? blob.size, addedAt: now, source: "mail", sourceMailId: selected.id, sourceMailExternalId: selected.externalId, sourceMailSubject: selected.subject, sourceMailSender: selected.sender, sourceMailSenderEmail: selected.senderEmail, sourceMailReceivedAt: selected.receivedAt, attachmentId: attachment.id, blobKey });
       }
-      const dossier: Dossier = target ? { ...target, documents: [...existingDocuments, ...documents], updatedAt: now } : { id: targetId, title: value.title, description: value.description, category: selected.commission || selected.category || "Administratif", manager: "Secrétariat", status: "À traiter", priority: "Normale", deadline: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10), createdAt: now, updatedAt: now, documents };
+      const dossier: Dossier = target ? { ...target, documents: [...existingDocuments, ...documents], updatedAt: now } : { id: targetId, ...value.dossier, createdAt: now, updatedAt: now, documents };
       const next = target ? dossiers.map((item) => item.id === targetId ? dossier : item) : [dossier, ...dossiers];
       saveDossiers(next); setDossiers(next); patchSelected({ dossierId: targetId }); setAddModalOpen(false);
       if (!target) dossierActivityRepository.add({ dossierId: targetId, type: "dossier", action: "created", label: `Dossier créé depuis le mail « ${selected.subject} »`, authorId: user.id, mailId: selected.id, timestamp: now });
       documents.forEach((document) => dossierActivityRepository.add({ dossierId: targetId, type: "document", action: "added", label: `Document ${document.originalName} ajouté`, authorId: user.id, documentId: document.id, mailId: selected.id, timestamp: now }));
-      setNotice(`${documents.length} document${documents.length > 1 ? "s ont" : " a"} été ajouté${documents.length > 1 ? "s" : ""} au dossier « ${dossier.title} ».`);
+      setNotice(value.mode === "new" ? `Le dossier « ${dossier.title} » a été créé et rattaché à ce mail${documents.length ? ` avec ${documents.length} document${documents.length > 1 ? "s" : ""}` : ""}.` : `${documents.length} document${documents.length > 1 ? "s ont" : " a"} été ajouté${documents.length > 1 ? "s" : ""} au dossier « ${dossier.title} ».`);
     } catch (reason) {
       await Promise.allSettled(storedKeys.map(deleteDocumentBlob));
       setAddError(reason instanceof Error ? reason.message : "Les pièces jointes n’ont pas pu être ajoutées.");
@@ -168,8 +170,8 @@ export default function MailsPage() {
         <aside className="mail-detail">
           {!selected ? <div className="empty-state"><Mail /><strong>Sélectionnez un mail</strong><span>Son contenu et ses actions apparaîtront ici.</span></div> : <>
             <header><div><span className="eyebrow">Reçu le {formatDate(selected.receivedAt)}</span><h3>{selected.subject}</h3><p>{selected.sender}{selected.senderEmail ? ` · ${selected.senderEmail}` : ""}</p></div><div className="mail-detail-header-actions">{can("mails", "delete") && <button type="button" className="danger-button compact-button" onClick={handleDeleteMail} title={selected.source === "outlook" ? "Retirer de CommunePilot (le message reste dans Outlook)" : "Supprimer ce mail"}><Trash2 /> Supprimer</button>}<button type="button" className="icon-button mail-detail-close" onClick={() => { setSelectedId(null); setSearchParams({}); }} aria-label="Fermer"><X /></button></div></header>
-            {notice && <div className="mail-notice" role="status">{notice}</div>}
-            <section className="mail-detail-section"><h4>Traitement</h4><div className="mail-fields-grid"><label>Statut<select value={selected.status} onChange={(event) => patchSelected({ status: event.target.value as MailStatus })}>{MAIL_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label><label>Commission<select value={selected.commission ?? ""} onChange={(event) => patchSelected({ commission: event.target.value || undefined })}><option value="">Non classée</option>{commissionOptions.map((commission) => <option key={commission}>{commission}</option>)}</select></label><label>Catégorie<select value={selected.category ?? ""} onChange={(event) => patchSelected({ category: event.target.value || undefined })}><option value="">Non classée</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label>Dossier<select value={selected.dossierId ?? ""} onChange={(event) => patchSelected({ dossierId: event.target.value ? Number(event.target.value) : undefined })}><option value="">Aucun dossier</option>{dossiers.map((dossier) => <option key={dossier.id} value={dossier.id}>{dossier.title}</option>)}</select></label></div>{selected.attachments.some((item) => !item.isInline) && <button className="primary-button compact-button" type="button" disabled={selected.source !== "outlook" || !selected.externalId || !account} onClick={() => { setAddError(""); setAddModalOpen(true); }}><FilePlus2 /> Ajouter à un dossier</button>}{selected.attachments.length > 0 && (!account || selected.source !== "outlook") && <small>Connectez le compte Outlook source pour récupérer le contenu réel des pièces jointes.</small>}</section>
+            {notice && <div className="mail-notice" role="status">{notice}{selected.dossierId && can("dossiers", "view") && <> <Link to={`/dossiers/${selected.dossierId}`}><FolderOpen size={14} /> Ouvrir le dossier</Link></>}</div>}
+            <section className="mail-detail-section"><h4>Traitement</h4><div className="mail-fields-grid"><label>Statut<select value={selected.status} onChange={(event) => patchSelected({ status: event.target.value as MailStatus })}>{MAIL_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label><label>Commission<select value={selected.commission ?? ""} onChange={(event) => patchSelected({ commission: event.target.value || undefined })}><option value="">Non classée</option>{commissionOptions.map((commission) => <option key={commission}>{commission}</option>)}</select></label><label>Catégorie<select value={selected.category ?? ""} onChange={(event) => patchSelected({ category: event.target.value || undefined })}><option value="">Non classée</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label>Dossier<select value={selected.dossierId ?? ""} onChange={(event) => patchSelected({ dossierId: event.target.value ? Number(event.target.value) : undefined })}><option value="">Aucun dossier</option>{dossiers.map((dossier) => <option key={dossier.id} value={dossier.id}>{dossier.title}</option>)}</select></label></div><div className="mail-dossier-actions">{selected.attachments.some((item) => !item.isInline) && <button className="primary-button compact-button" type="button" disabled={selected.source !== "outlook" || !selected.externalId || !account} onClick={() => { setAddError(""); setAddModalMode("existing"); setAddModalOpen(true); }}><FilePlus2 /> Ajouter à un dossier</button>}{can("dossiers", "create") && <button className="secondary-button compact-button" type="button" onClick={() => { setAddError(""); setAddModalMode("new"); setAddModalOpen(true); }}><CirclePlus /> Créer un dossier</button>}</div>{selected.attachments.length > 0 && (!account || selected.source !== "outlook") && <small>Connectez le compte Outlook source pour récupérer le contenu réel des pièces jointes. Vous pouvez créer le dossier sans document.</small>}</section>
             <section className="mail-detail-section"><h4>Message</h4><p className="mail-content">{selected.content || selected.preview}</p></section>
             <section className="mail-detail-section"><h4>Résumé opérationnel</h4><textarea rows={3} value={selected.summary ?? ""} placeholder="Résumé court saisi localement…" onChange={(event) => patchSelected({ summary: event.target.value })} /><small>Champ local utilisateur : aucune IA distante n’est simulée.</small><label>Notes internes<textarea rows={4} value={selected.internalNotes ?? ""} placeholder="Notes visibles uniquement dans CommunePilot…" onChange={(event) => patchSelected({ internalNotes: event.target.value })} /></label></section>
             <section className="mail-detail-section"><h4>Pièces jointes ({selected.attachments.length})</h4>{selected.attachments.length ? <ul className="attachment-list">{selected.attachments.map((attachment) => <li key={attachment.id}><Paperclip /><span><strong>{attachment.name}</strong><small>{attachment.mimeType ?? "Type inconnu"}{attachment.size ? ` · ${Math.ceil(attachment.size / 1024)} Ko` : ""}</small></span>{selected.source === "outlook" && selected.externalId && account ? <button className="text-link" type="button" onClick={() => void downloadAttachment(selected.externalId!, attachment.id, attachment.name).catch(() => undefined)}><Download /> Télécharger</button> : attachment.url ? <a href={attachment.url} target="_blank" rel="noreferrer">Ouvrir</a> : <em>Non récupérée</em>}</li>)}</ul> : <p className="muted-copy">Aucune pièce jointe disponible.</p>}</section>
@@ -178,7 +180,7 @@ export default function MailsPage() {
           </>}
         </aside>
       </div>
-      {selected && addModalOpen && <AddAttachmentsToDossierModal mail={selected} dossiers={dossiers} busy={addingDocuments} error={addError} onClose={() => { if (!addingDocuments) { setAddModalOpen(false); setAddError(""); } }} onSubmit={(value) => void addAttachments(value)} />}
+      {selected && addModalOpen && <AddAttachmentsToDossierModal key={`${selected.id}-${addModalMode}`} mail={selected} dossiers={dossiers} busy={addingDocuments} error={addError} initialMode={addModalMode} canCreate={can("dossiers", "create")} canFetchAttachments={selected.source === "outlook" && Boolean(selected.externalId && account)} defaultManager={`${user.firstName} ${user.lastName}`} onClose={() => { if (!addingDocuments) { setAddModalOpen(false); setAddError(""); } }} onSubmit={(value) => void addAttachments(value)} />}
     </section>
   );
 }

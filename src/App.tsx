@@ -12,6 +12,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import DossiersPage from "./features/dossiers/pages/DossiersPage";
 import DossierDetailPage from "./features/dossiers/pages/DossierDetailPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
+import BusinessLayersPage from "./features/voirie/pages/BusinessLayersPage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 import CommuneMapPage from "./features/map/pages/CommuneMapPage";
 import EquipmentDetailPage from "./features/equipments/pages/EquipmentDetailPage";
@@ -25,6 +26,9 @@ import MissionsPage from "./features/field/MissionsPage";
 import TerrainPage from "./features/field/TerrainPage";
 import FieldAlertsPage from "./features/field/FieldAlertsPage";
 import NotificationsPage from "./features/field/NotificationsPage";
+import CalendarPage from "./features/calendar/pages/CalendarPage";
+import CalendarSettingsPage from "./features/calendar/pages/CalendarSettingsPage";
+import CommissionPage from "./features/commissions/pages/CommissionPage";
 
 const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
 function HomeRedirect() { const { user } = useIdentity(); return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
@@ -50,8 +54,10 @@ export default function App() {
 
         <Route
           path="/voirie"
-          element={protect("equipements", <VoiriePage />)}
+          element={protect("equipements", <CommissionPage commissionId="voirie" />)}
         />
+        <Route path="/voirie/chantiers" element={protect("equipements", <VoiriePage />)} />
+        <Route path="/voirie/couches-metier" element={protect("carte", <BusinessLayersPage />)} />
 
         <Route
           path="/signalements"
@@ -79,12 +85,10 @@ export default function App() {
 
         <Route
           path="/batiments"
-          element={protect("calendrier",
-            <PlaceholderPage
-              title="Bâtiments"
-              description="Le module Bâtiments sera développé ici."
-            />)}
+          element={protect("dashboard", <CommissionPage commissionId="batiments" />)}
         />
+        <Route path="/gestion-des-salles" element={protect("dashboard", <CommissionPage commissionId="salles" />)} />
+        <Route path="/communication" element={protect("dashboard", <CommissionPage commissionId="communication" />)} />
 
         <Route
           path="/mails"
@@ -110,22 +114,12 @@ export default function App() {
 
         <Route
           path="/calendrier"
-          element={
-            <PlaceholderPage
-              title="Calendrier"
-              description="Le module Calendrier sera développé ici."
-            />
-          }
+          element={protect("calendrier", <CalendarPage />)}
         />
 
         <Route
           path="/parametres"
-          element={
-            <PlaceholderPage
-              title="Paramètres"
-              description="Configuration générale de CommunePilot."
-            />
-          }
+          element={<CalendarSettingsPage />}
         />
       </Route>
 

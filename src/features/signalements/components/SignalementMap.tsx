@@ -3,7 +3,9 @@ import {
   Marker,
   Popup,
   TileLayer,
+  useMap,
 } from "react-leaflet";
+import { useEffect } from "react";
 
 import L from "leaflet";
 
@@ -36,6 +38,15 @@ interface SignalementMapProps {
   height?: number;
 }
 
+function CenterOnIntervention({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const map = useMap();
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => { map.invalidateSize(); map.setView([latitude, longitude], 17, { animate: false }); });
+    return () => window.cancelAnimationFrame(frame);
+  }, [latitude, longitude, map]);
+  return null;
+}
+
 export default function SignalementMap({
   latitude,
   longitude,
@@ -50,8 +61,14 @@ export default function SignalementMap({
           latitude,
           longitude,
         ]}
-        zoom={16}
-        scrollWheelZoom
+        zoom={17}
+        scrollWheelZoom={false}
+        dragging={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        boxZoom={false}
+        keyboard={false}
+        zoomControl={false}
         style={{
           height,
           width: "100%",
@@ -61,6 +78,7 @@ export default function SignalementMap({
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <CenterOnIntervention latitude={latitude} longitude={longitude} />
 
         <Marker
           position={[

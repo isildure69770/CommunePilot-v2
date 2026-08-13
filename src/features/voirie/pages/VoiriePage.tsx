@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, Layers3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ChantierCard } from "../components/ChantierCard";
 import ChantierFilters from "../components/ChantierFilters";
@@ -82,13 +82,13 @@ export default function VoiriePage() {
           </p>
         </div>
 
-        <button
+        <div className="page-heading-actions"><Link className="secondary-button" to="/voirie/couches-metier"><Layers3 size={18}/> Couches métier</Link><button
           className="primary-button"
           type="button"
           onClick={openCreateForm}
         >
           + Nouveau chantier
-        </button>
+        </button></div>
       </div>
 
       <RoadEquipmentIndicators />

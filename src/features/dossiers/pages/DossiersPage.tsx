@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DossierCard from "../components/DossierCard";
 import DossierFilters from "../components/DossierFilters";
 import DossierForm from "../components/DossierForm";
@@ -6,6 +7,8 @@ import { useDossiers } from "../hooks/useDossiers";
 import type { Dossier } from "../types/dossier";
 
 export default function DossiersPage() {
+  const [params, setParams] = useSearchParams();
+  const initialCategory = params.get("commission") ?? "";
   const {
     filteredDossiers,
     filters,
@@ -20,6 +23,10 @@ export default function DossiersPage() {
   const [selectedDossier, setSelectedDossier] =
     useState<Dossier | null>(null);
 
+  useEffect(() => {
+    if (params.get("new") === "1") setIsFormOpen(true);
+  }, [params]);
+
   function openCreateForm() {
     setSelectedDossier(null);
     setIsFormOpen(true);
@@ -33,6 +40,7 @@ export default function DossiersPage() {
   function closeForm() {
     setIsFormOpen(false);
     setSelectedDossier(null);
+    if (params.get("new")) { params.delete("new"); setParams(params, { replace: true }); }
   }
 
   function handleSubmit(
@@ -114,6 +122,7 @@ export default function DossiersPage() {
         dossier={selectedDossier}
         onClose={closeForm}
         onSubmit={handleSubmit}
+        initialCategory={initialCategory}
       />
     </section>
   );

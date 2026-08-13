@@ -15,12 +15,14 @@ export interface SignalementFilters {
   search: string;
   status: SignalementStatus | "Tous";
   priority: SignalementPriority | "Toutes";
+  category: string;
 }
 
 const defaultFilters: SignalementFilters = {
   search: "",
   status: "Tous",
   priority: "Toutes",
+  category: "Toutes",
 };
 
 export function useSignalements() {
@@ -63,10 +65,12 @@ export function useSignalements() {
         filters.priority === "Toutes" ||
         signalement.priority === filters.priority;
 
+      const matchesCategory = filters.category === "Toutes" || signalement.category === filters.category || (filters.category === "Bâtiments" && signalement.category === "Bâtiment");
+
       return (
         matchesSearch &&
         matchesStatus &&
-        matchesPriority
+        matchesPriority && matchesCategory
       );
     });
   }, [signalements, filters]);

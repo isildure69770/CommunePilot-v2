@@ -16,6 +16,7 @@ interface DossierFormProps {
   dossier?: Dossier | null;
   onClose: () => void;
   onSubmit: (value: DossierFormValue) => void;
+  initialCategory?: string;
 }
 
 const emptyForm: DossierFormValue = {
@@ -33,6 +34,7 @@ export default function DossierForm({
   dossier,
   onClose,
   onSubmit,
+  initialCategory = "",
 }: DossierFormProps) {
   const [form, setForm] =
     useState<DossierFormValue>(emptyForm);
@@ -49,9 +51,9 @@ export default function DossierForm({
         deadline: dossier.deadline.slice(0, 10),
       });
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, category: initialCategory });
     }
-  }, [dossier, isOpen]);
+  }, [dossier, isOpen, initialCategory]);
 
   if (!isOpen) {
     return null;
