@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Camera, CheckCircle2, FileText, MapPin, Play, Wrench } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { useIdentity } from "../access/LocalIdentityProvider";
 import { dossierActivityRepository } from "../dossiers/services/dossierActivityRepository";
 import { filesToAttachments } from "./fileUtils";
@@ -18,7 +19,8 @@ export default function TerrainPage() {
   const [selected, setSelected] = useState<string>();
   const mission = displayed.find((item) => item.id === selected) ?? displayed[0];
   const [reportOpen, setReportOpen] = useState(false);
-  const [alertOpen, setAlertOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const alertOpen = searchParams.get("nouvelle-alerte") === "1";
   const [comment, setComment] = useState("");
   const [outcome, setOutcome] = useState<"terminée" | "nouvelle-intervention">("terminée");
   const [afterPhotos, setAfterPhotos] = useState<Mission["attachments"]>([]);
@@ -59,10 +61,10 @@ export default function TerrainPage() {
   return <section className="terrain-page">
     <header className="terrain-heading"><div><span className="eyebrow">Espace terrain</span><h2>Bonjour {user.firstName}</h2><p>{mine.filter((item) => !["Terminée"].includes(item.status)).length} mission(s) à réaliser</p></div></header>
     <nav className="terrain-status-tabs" aria-label="Statut des missions">{tabs.map((status) => <button className={tab === status ? "active" : ""} type="button" key={status} onClick={() => { setTab(status); setSelected(undefined); }}><span>{status}</span><strong>{status === "Toutes" ? mine.length : mine.filter((item) => item.status === status).length}</strong></button>)}</nav>
-    <button className="alert-permanent" onClick={() => setAlertOpen(true)}><AlertTriangle/> Signaler un problème</button>
+    <button className="alert-permanent" type="button" onClick={() => setSearchParams({ "nouvelle-alerte": "1" })}><AlertTriangle/> Signaler un problème</button>
     <div className="terrain-layout"><aside className="mission-picker"><h3><Wrench/> Mes missions</h3>{displayed.map((item) => <button className={item.id === mission?.id ? "active" : ""} key={item.id} onClick={() => setSelected(item.id)}><strong>{item.title}</strong><span>{item.priority} · {item.status}</span></button>)}</aside><main className="terrain-mission">{mission ? <><div className="terrain-mission-title"><span className={`priority priority-${mission.priority.toLowerCase()}`}>{mission.priority}</span><h3>{mission.title}</h3><p>{mission.description}</p><span><MapPin/> {mission.address || "Adresse à préciser"}</span></div><div className="mission-workflow"><span className={mission.status !== "À faire" ? "done" : "active"}>1 Prise en compte</span><span className={["En cours","Terminée"].includes(mission.status) ? "done" : mission.status === "Prise en compte" ? "active" : ""}>2 Commencée</span><span className={mission.status === "Terminée" ? "done" : mission.status === "En cours" ? "active" : ""}>3 Terminée</span></div><div className="terrain-actions"><button className="action-acknowledge" disabled={mission.status !== "À faire"} onClick={acknowledge}><CheckCircle2/> Prendre en compte</button><button className="action-start" disabled={mission.status !== "Prise en compte"} onClick={start}><Play/> Commencer</button><label className="terrain-file-button"><Camera/> Prendre une photo<input type="file" accept="image/*" capture="environment" multiple onChange={(event) => void addBefore(event.target.files)}/></label><details><summary><FileText/> Voir les documents</summary>{mission.attachments.length ? mission.attachments.map((attachment) => <a href={attachment.dataUrl} download={attachment.name} key={attachment.id}>{attachment.name}</a>) : <p>Aucun document joint.</p>}</details><button className="action-finish" disabled={mission.status !== "En cours"} onClick={() => setReportOpen(true)}><CheckCircle2/> Terminer la mission</button></div></> : <div className="empty-state"><CheckCircle2/><strong>Aucune mission dans cet onglet</strong><span>Changez de statut pour afficher les autres missions.</span></div>}</main></div>
     {reportOpen && <div className="modal-backdrop"><div className="modal terrain-modal"><div className="modal-header"><div><span className="eyebrow">Compte rendu</span><h3>Terminer l’intervention</h3></div><button className="icon-button" onClick={() => setReportOpen(false)}>×</button></div><div className="field-form"><label>Remarque<textarea rows={4} value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Travaux réalisés, difficulté rencontrée…"/></label><label>Photos après intervention<input type="file" accept="image/*" capture="environment" multiple onChange={async (event) => setAfterPhotos(await filesToAttachments(event.target.files,"photo","après"))}/></label><label>Résultat<select value={outcome} onChange={(event) => setOutcome(event.target.value as typeof outcome)}><option value="terminée">Intervention terminée</option><option value="nouvelle-intervention">Nouvelle intervention nécessaire</option></select></label><button className="terrain-submit" onClick={finish}>Valider le compte rendu</button></div></div></div>}
-    {alertOpen && <AlertForm onClose={() => setAlertOpen(false)} onSubmit={(alert) => { saveAlerts([alert,...alerts]); informManagers("Nouveau signalement terrain",alert.category,"/alertes-terrain"); setAlertOpen(false); }} userId={user.id}/>}
+    {alertOpen && <AlertForm onClose={() => setSearchParams({})} onSubmit={(alert) => { saveAlerts([alert,...alerts]); informManagers("Nouveau signalement terrain",alert.category,"/alertes-terrain"); setSearchParams({}); }} userId={user.id}/>}
   </section>;
 }
 
