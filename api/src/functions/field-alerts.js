@@ -1,0 +1,57 @@
+import { app } from "@azure/functions";
+import { TableClient } from "@azure/data-tables";
+
+const tableName = process.env.FIELD_ALERTS_TABLE_NAME || "FieldAlerts";
+const createRoles = new Set(["maire", "adjoint", "conseiller", "agent-administratif", "agent-technique"]);
+const updateRoles = new Set(["maire", "adjoint", "conseiller", "agent-administratif"]);
+
+function principal(request) {
+  const encoded = request.headers.get("x-ms-client-principal");
+  if (!encoded) return null;
+  try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
+}
+function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
+function cleanPhoto(photo) { const { dataUrl: _dataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: "" }; }
+function cleanAlert(alert) { return { ...alert, photos: Array.isArray(alert.photos) ? alert.photos.map(cleanPhoto) : [] }; }
+function entityToAlert(entity) { return JSON.parse(entity.payload); }
+
+async function table() {
+  const connectionString = process.env.FIELD_ALERTS_STORAGE_CONNECTION_STRING;
+  if (!connectionString) throw new Error("Configuration FIELD_ALERTS_STORAGE_CONNECTION_STRING absente.");
+  const client = TableClient.fromConnectionString(connectionString, tableName);
+  await client.createTable().catch((error) => { if (error.statusCode !== 409) throw error; });
+  return client;
+}
+async function list(client) {
+  const alerts = [];
+  for await (const entity of client.listEntities({ queryOptions: { filter: "PartitionKey eq 'alerts'" } })) alerts.push(entityToAlert(entity));
+  return alerts;
+}
+
+app.http("field-alerts", {
+  methods: ["GET", "PUT"], authLevel: "anonymous", route: "field-alerts",
+  handler: async (request, context) => {
+    const user = principal(request);
+    if (!user?.userRoles?.includes("authenticated")) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
+    if (!may(user, createRoles)) return { status: 403, jsonBody: { error: "Rôle CommunePilot requis." } };
+    try {
+      const client = await table();
+      if (request.method === "PUT") {
+        const body = await request.json(); const incoming = Array.isArray(body?.alerts) ? body.alerts : [];
+        const remote = new Map((await list(client)).map((alert) => [alert.id, alert]));
+        for (const raw of incoming) {
+          if (!raw?.id || !raw?.updatedAt) continue;
+          const existing = remote.get(raw.id);
+          if (existing && !may(user, updateRoles)) continue;
+          if (!existing && !may(user, createRoles)) continue;
+          const candidate = cleanAlert(raw);
+          if (!existing || candidate.updatedAt > existing.updatedAt) {
+            await client.upsertEntity({ partitionKey: "alerts", rowKey: candidate.id, updatedAt: candidate.updatedAt, payload: JSON.stringify(candidate) }, "Replace");
+            remote.set(candidate.id, candidate);
+          }
+        }
+      }
+      return { status: 200, jsonBody: { alerts: await list(client) } };
+    } catch (error) { context.error(error); return { status: 503, jsonBody: { error: "Stockage des alertes indisponible." } }; }
+  }
+});
