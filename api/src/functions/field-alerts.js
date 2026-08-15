@@ -11,7 +11,7 @@ function principal(request) {
   try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
 }
 function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
-function cleanPhoto(photo) { const { dataUrl: _dataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: "" }; }
+function cleanPhoto(photo) { const { dataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "" }; }
 function cleanAlert(alert) { return { ...alert, photos: Array.isArray(alert.photos) ? alert.photos.map(cleanPhoto) : [] }; }
 function entityToAlert(entity) { return JSON.parse(entity.payload); }
 
@@ -40,7 +40,8 @@ app.http("field-alerts", {
         const body = await request.json(); const incoming = Array.isArray(body?.alerts) ? body.alerts : [];
         const remote = new Map((await list(client)).map((alert) => [alert.id, alert]));
         for (const raw of incoming) {
-          if (!raw?.id || !raw?.updatedAt) continue;
+          if (!raw?.id) continue;
+          raw.updatedAt ||= raw.createdAt;
           const existing = remote.get(raw.id);
           if (existing && !may(user, updateRoles)) continue;
           if (!existing && !may(user, createRoles)) continue;

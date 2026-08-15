@@ -95,7 +95,7 @@ export default function App() {
           element={protect("mails", <MailsPage />)}
         />
 
-        <Route path="/missions" element={protect("missions", <MissionsPage />, "create")} />
+        <Route path="/missions" element={protect("missions", <MissionsPage />)} />
         <Route path="/terrain" element={protect("missions", <TerrainPage />)} />
         <Route path="/alertes-terrain" element={protect("signalements", <FieldAlertsPage />, "update")} />
         <Route path="/utilisateurs" element={protect("utilisateurs", <UsersPage />)} />

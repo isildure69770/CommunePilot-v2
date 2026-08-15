@@ -1,24 +1,30 @@
+import { useState } from "react";
+import { AlertTriangle, CheckCircle2, MapPin, UserRound } from "lucide-react";
 import { useIdentity } from "../access/LocalIdentityProvider";
-import { initialDossiers } from "../dossiers/data/dossiers";
-import { loadDossiers, saveDossiers } from "../dossiers/services/dossierStorage";
 import { makeId } from "./repository";
-import type { Mission } from "./types";
+import type { FieldAlert, Mission } from "./types";
 import { useFieldData } from "./useFieldData";
 
 export default function FieldAlertsPage() {
-  const { user } = useIdentity();
+  const { user, users } = useIdentity();
   const { alerts, missions, saveAlerts, saveMissions, notify } = useFieldData();
-  const update = (id: string, patch: Partial<(typeof alerts)[number]>) => saveAlerts(alerts.map((a) => a.id === id ? { ...a, ...patch } : a));
-  const transform = (id: string) => {
-    const alert = alerts.find((a) => a.id === id); if (!alert) return;
+  const [assignment, setAssignment] = useState<Record<string, string>>(Object.fromEntries(alerts.map((alert) => [alert.id, ""])));
+  const agents = users.filter((candidate) => candidate.active && candidate.role === "Agent technique");
+  const update = (id: string, patch: Partial<FieldAlert>) => saveAlerts(alerts.map((alert) => alert.id === id ? { ...alert, ...patch, updatedAt: new Date().toISOString() } : alert));
+  function transform(alert: FieldAlert) {
+    const agentId = assignment[alert.id]; if (!agentId) { window.alert("Choisissez un agent avant de créer la mission."); return; }
     const now = new Date().toISOString();
-    const mission: Mission = { id: makeId("mission"), title: `Signalement ${alert.category}`, description: alert.comment, address: alert.address, latitude: alert.latitude, longitude: alert.longitude, priority: "Normale", status: "À faire", dueDate: "", category: alert.category, dossierId: alert.dossierId, assigneeIds: [], attachments: alert.photos, reports: [], history: [{ id: makeId("history"), at: now, userId: user.id, label: "Mission créée depuis une alerte" }], createdAt: now, updatedAt: now };
-    saveMissions([mission, ...missions]); update(id, { status: "Transformé en mission", missionId: mission.id }); notify({ userIds: [], title: "Mission à affecter", message: mission.title, link: "/missions" });
-  };
-  const createDossier = (id: string) => {
-    const alert = alerts.find((a) => a.id === id); if (!alert) return;
-    const dossiers = loadDossiers() ?? initialDossiers; const now = new Date().toISOString(); const dossierId = Date.now();
-    saveDossiers([{ id: dossierId, title: `Signalement ${alert.category}`, description: alert.comment, category: alert.category, manager: `${user.firstName} ${user.lastName}`, status: "À traiter", priority: "Normale", deadline: "", createdAt: now, updatedAt: now, documents: [] }, ...dossiers]); update(id, { dossierId, status: "Pris en compte" });
-  };
-  return <section><div className="page-heading"><div><span className="eyebrow">Remontées du terrain</span><h2>Alertes terrain</h2><p>Traitez, rattachez ou transformez les signalements des agents.</p></div></div><div className="alert-grid">{alerts.map((a) => <article className="alert-card" key={a.id}><header><strong>{a.category}</strong><span>{a.status}</span></header><p>{a.comment}</p><small>{a.address || "Sans adresse"} · {new Date(a.createdAt).toLocaleString("fr-FR")}</small>{a.photos.length > 0 && <div className="alert-photos">{a.photos.map((p) => <img src={p.dataUrl} alt="Signalement" key={p.id}/>)}</div>}<div className="card-actions"><button onClick={() => update(a.id, { status: "Pris en compte" })}>Prendre en compte</button><button onClick={() => transform(a.id)} disabled={a.status === "Transformé en mission"}>Transformer en mission</button><button onClick={() => createDossier(a.id)}>{a.dossierId ? `Dossier #${a.dossierId}` : "Créer un dossier"}</button><button onClick={() => update(a.id, { status: "Classé" })}>Classer</button></div></article>)}{alerts.length === 0 && <div className="empty-state">Aucune alerte terrain.</div>}</div></section>;
+    const mission: Mission = { id: makeId("mission"), title: `Problème ${alert.category}`, description: alert.comment, address: alert.address, latitude: alert.latitude, longitude: alert.longitude, priority: alert.priority ?? "Normale", status: "À faire", dueDate: "", category: alert.category, dossierId: alert.dossierId, assigneeIds: [agentId], attachments: alert.photos, reports: [], problems: [], history: [{ id: makeId("history"), at: now, userId: user.id, label: "Mission créée et affectée depuis Problèmes terrain" }], createdAt: now, updatedAt: now };
+    saveMissions([mission, ...missions]); update(alert.id, { status: "Transformé en mission", missionId: mission.id }); notify({ userIds: [agentId], title: "Nouvelle mission", message: mission.title, link: "/terrain" });
+  }
+  return <section className="field-alerts-page"><div className="page-heading"><div><span className="eyebrow">Voirie</span><h2>Problèmes terrain</h2><p>Qualifiez les remontées des agents, priorisez-les puis transformez-les en missions affectées.</p></div></div>
+    <div className="alert-grid">{alerts.map((alert) => {
+      const author = users.find((candidate) => candidate.id === alert.createdBy); const done = alert.status === "Transformé en mission";
+      return <article className="alert-card" key={alert.id}><header><span className={`alert-category ${alert.priority === "Urgente" ? "is-urgent" : ""}`}><AlertTriangle/>{alert.category}</span><span className="mission-status">{alert.status}</span></header><p>{alert.comment}</p><div className="alert-metadata"><span><MapPin/>{alert.address || (alert.latitude != null ? `${alert.latitude.toFixed(5)}, ${alert.longitude?.toFixed(5)}` : "Sans localisation")}</span><span><UserRound/>{author ? `${author.firstName} ${author.lastName}` : alert.createdBy}</span><time>{new Date(alert.createdAt).toLocaleString("fr-FR")}</time></div>
+        {alert.photos.length > 0 && <div className="alert-photos">{alert.photos.map((photo) => <a href={photo.dataUrl} target="_blank" rel="noreferrer" key={photo.id}><img src={photo.dataUrl} alt={photo.name}/></a>)}</div>}
+        {!done && <div className="alert-qualification"><label>Priorité<select value={alert.priority ?? "Normale"} onChange={(event) => update(alert.id, { priority: event.target.value as FieldAlert["priority"], status: "Pris en compte" })}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label><label>Affecter à<select value={assignment[alert.id] ?? ""} onChange={(event) => setAssignment({ ...assignment, [alert.id]: event.target.value })}><option value="">Choisir un agent…</option>{agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.firstName} {agent.lastName}</option>)}</select></label></div>}
+        <div className="card-actions">{alert.status === "Nouveau" && <button onClick={() => update(alert.id, { status: "Pris en compte" })}><CheckCircle2/>Qualifier</button>}<button className="primary-button" onClick={() => transform(alert)} disabled={done}>{done ? "Mission créée" : "Créer et affecter la mission"}</button>{!done && <button onClick={() => update(alert.id, { status: "Classé" })}>Classer</button>}</div>
+      </article>;
+    })}{alerts.length === 0 && <div className="empty-state"><CheckCircle2/><strong>Aucun problème terrain</strong><span>Les nouvelles alertes des agents apparaîtront ici.</span></div>}</div>
+  </section>;
 }
