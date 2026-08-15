@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, FileText, Flag, Info, MapPin, Navigation, Play, X, ZoomIn, ZoomOut } from "lucide-react";
-import { useSearchParams } from "react-router-dom";
+import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock3, FileText, Flag, Info, Map, MapPin, Navigation, Play, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useIdentity } from "../access/LocalIdentityProvider";
 import { dossierActivityRepository } from "../dossiers/services/dossierActivityRepository";
 import { filesToAttachments } from "./fileUtils";
@@ -8,7 +8,24 @@ import { makeId } from "./repository";
 import type { FieldAlert, FileAttachment, Mission } from "./types";
 import { useFieldData } from "./useFieldData";
 
-const tabs = ["Toutes", "À faire", "Prise en compte", "En cours", "Terminée"] as const;
+const tabs = ["Toutes", "À faire", "En cours", "Terminées"] as const;
+
+function matchesTab(mission: Mission, tab: (typeof tabs)[number]) {
+  if (tab === "Toutes") return true;
+  if (tab === "À faire") return mission.status === "À faire" || mission.status === "Prise en compte";
+  if (tab === "Terminées") return mission.status === "Terminée";
+  return mission.status === tab;
+}
+
+function durationLabel(mission: Mission) {
+  if (!mission.dueDate) return "Non définie";
+  const elapsed = new Date(mission.dueDate).getTime() - new Date(mission.createdAt).getTime();
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return "À échéance";
+  const hours = Math.max(1, Math.round(elapsed / 3_600_000));
+  if (hours < 24) return `${hours} h`;
+  const days = Math.round(hours / 24);
+  return `${days} jour${days > 1 ? "s" : ""}`;
+}
 
 export default function TerrainPage() {
   const { user, users } = useIdentity();
@@ -16,7 +33,9 @@ export default function TerrainPage() {
   const mine = missions.filter((item) => item.assigneeIds.includes(user.id) && item.status !== "Annulée" && !item.archivedAt);
   const recent = mine.filter((item) => item.status === "Terminée").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Toutes");
-  const displayed = tab === "Toutes" ? mine : mine.filter((item) => item.status === tab);
+  const displayed = mine.filter((item) => matchesTab(item, tab));
+  const myAlerts = alerts.filter((item) => item.createdBy === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [section, setSection] = useState<"missions" | "alerts">("missions");
   const [detailsId, setDetailsId] = useState<string>();
   const [reportId, setReportId] = useState<string>();
   const [problemId, setProblemId] = useState<string>();
@@ -42,15 +61,24 @@ export default function TerrainPage() {
   }
   const showGallery = (photos: FileAttachment[], index: number) => setGallery({ photos, index });
 
+  const activeCount = mine.filter((item) => item.status !== "Terminée").length;
+  const inProgressCount = mine.filter((item) => item.status === "En cours").length;
+
   return <section className="terrain-page">
-    <header className="terrain-heading"><div><span className="eyebrow">Centre de commande terrain</span><h2>Bonjour {user.firstName}</h2><p>{mine.filter((item) => item.status !== "Terminée").length} mission(s) à réaliser</p></div><button className="new-alert-button" type="button" onClick={() => setSearchParams({ "nouvelle-alerte": "1" })}><AlertTriangle size={17}/> Nouvelle alerte</button></header>
-    <nav className="terrain-status-tabs" aria-label="Filtrer les missions">{tabs.map((status) => <button className={tab === status ? "active" : ""} type="button" key={status} onClick={() => setTab(status)}><span>{status}</span><strong>{status === "Toutes" ? mine.length : mine.filter((item) => item.status === status).length}</strong></button>)}</nav>
+    <header className="terrain-heading"><div><span className="terrain-agent-name">{user.firstName} <i/> Agent</span><h2>Mes interventions</h2><p>Votre feuille de route terrain</p></div></header>
+    <section className="terrain-summary" aria-label="Résumé des missions"><span className="terrain-summary-icon"><ClipboardList/></span><div><small>Aujourd’hui</small><strong>{activeCount} mission{activeCount > 1 ? "s" : ""} à réaliser</strong><p>{inProgressCount ? `${inProgressCount} en cours` : "Prêt à commencer"}</p></div><span className="terrain-summary-count">{activeCount}</span></section>
+    <nav className="terrain-section-tabs" aria-label="Rubriques terrain"><button type="button" className={section === "missions" ? "active" : ""} onClick={() => setSection("missions")}><ClipboardList/>Mes missions</button><Link to="/carte"><Map/>Carte</Link><button type="button" className={section === "alerts" ? "active" : ""} onClick={() => setSection("alerts")}><AlertTriangle/>Alertes{myAlerts.length > 0 && <strong>{myAlerts.length}</strong>}</button></nav>
+    {section === "missions" && <>
+    <nav className="terrain-status-tabs" aria-label="Filtrer les missions">{tabs.map((status) => <button className={tab === status ? "active" : ""} type="button" key={status} onClick={() => setTab(status)}><span>{status}</span><strong>{mine.filter((item) => matchesTab(item, status)).length}</strong></button>)}</nav>
     <div className="terrain-card-list">{displayed.map((mission) => {
       const photos = [...mission.attachments.filter((file) => file.kind === "photo"), ...mission.reports.flatMap((report) => report.photos)];
+      const creatorId = mission.history[0]?.userId;
+      const creator = users.find((candidate) => candidate.id === creatorId);
       return <article className="terrain-card" key={mission.id}>
-        <div className="terrain-card-top"><div className="terrain-card-labels">{mission.priority === "Urgente" && <span className="urgent-dot"><i/>Urgente</span>}<span className="mission-status">{mission.status}</span></div>{mission.dueDate && <time>{new Date(mission.dueDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</time>}</div>
+        <div className="terrain-card-top"><div className="terrain-card-labels"><span className={`priority-pill priority-${mission.priority.toLowerCase()}`}><i/>{mission.priority}</span><span className="mission-status">{mission.status}</span></div><span className="mission-duration"><Clock3/>{durationLabel(mission)}</span></div>
         <h3>{mission.title}</h3><p className="terrain-card-description">{mission.description}</p><p className="terrain-address"><MapPin size={15}/>{mission.address || "Adresse à préciser"}</p>
         {photos.length > 0 && <div className="mission-thumbnails" aria-label={`${photos.length} photo(s)`}>{photos.slice(0, 4).map((photo, index) => <button type="button" key={photo.id} onClick={() => showGallery(photos, index)}><img src={photo.dataUrl} alt={photo.name}/>{index === 3 && photos.length > 4 && <span>+{photos.length - 4}</span>}</button>)}</div>}
+        <dl className="terrain-card-facts"><div><dt>Créée par</dt><dd>{creator ? `${creator.firstName} ${creator.lastName}` : "Équipe municipale"}</dd></div><div><dt>Priorité</dt><dd>{mission.priority}</dd></div><div><dt>Type</dt><dd>{mission.category || "Intervention"}</dd></div></dl>
         <div className="terrain-quick-actions"><button type="button" onClick={() => setDetailsId(mission.id)}><Info/>Détails</button><label><Camera/>Photo<input type="file" accept="image/*" capture="environment" multiple onChange={(event) => void addPhoto(mission, event.target.files)}/></label><button type="button" onClick={() => itinerary(mission)} disabled={!mission.address && mission.latitude == null}><Navigation/>Itinéraire</button></div>
         <div className="terrain-workflow-actions">
           {mission.status === "À faire" && <button className="workflow-primary" onClick={() => transition(mission, "Prise en compte", "Mission prise en compte")}><Check/>Prendre en compte</button>}
@@ -63,7 +91,9 @@ export default function TerrainPage() {
     <section className="recent-missions" aria-labelledby="recent-missions-title">
       <h3 id="recent-missions-title">Missions récentes</h3>
       {recent.length > 0 ? <div>{recent.map((mission) => <button type="button" key={mission.id} onClick={() => setDetailsId(mission.id)}><CheckCircle2/><span><strong>{mission.title}</strong><small>{mission.address || "Adresse à préciser"}</small></span><time>{new Date(mission.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</time></button>)}</div> : <p>Aucune mission terminée récemment.</p>}
-    </section>
+    </section></>}
+    {section === "alerts" && <section className="terrain-alerts-view"><header><div><span className="eyebrow">Remontées terrain</span><h3>Mes alertes</h3></div></header>{myAlerts.length > 0 ? <div>{myAlerts.map((alert) => <article key={alert.id}><span className={`alert-priority priority-${alert.priority.toLowerCase()}`}>{alert.priority}</span><strong>{alert.category}</strong><p>{alert.comment}</p><small><MapPin/>{alert.address || "Position transmise"} · {new Date(alert.createdAt).toLocaleDateString("fr-FR")}</small><em>{alert.status}</em></article>)}</div> : <div className="empty-state"><AlertTriangle/><strong>Aucune alerte envoyée</strong><span>Utilisez le bouton « Nouvelle alerte » pour prévenir les élus.</span></div>}</section>}
+    <button className="new-alert-button" type="button" onClick={() => setSearchParams({ "nouvelle-alerte": "1" })}><AlertTriangle size={18}/> Nouvelle alerte</button>
     {detailsId && <MissionDetails mission={missions.find((item) => item.id === detailsId)} users={users} onClose={() => setDetailsId(undefined)} onGallery={showGallery}/>}
     {reportId && <FinishForm mission={missions.find((item) => item.id === reportId)} userId={user.id} onClose={() => setReportId(undefined)} onSubmit={(next) => { replace(next); informManagers("Compte rendu reçu", next.title); setReportId(undefined); }}/>}
     {problemId && <MissionProblemForm mission={missions.find((item) => item.id === problemId)} userId={user.id} onClose={() => setProblemId(undefined)} onSubmit={(next) => { replace(next); informManagers("Problème pendant une mission", next.title); setProblemId(undefined); }}/>}
