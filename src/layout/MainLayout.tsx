@@ -12,7 +12,7 @@ export default function MainLayout() {
 
   return (
     <div className="layout">
-      {user.role !== "Agent technique" && <Sidebar isOpen={isNavigationOpen} onClose={() => setIsNavigationOpen(false)} />}
+      {(user.role !== "Agent technique" || isNavigationOpen) && <Sidebar isOpen={isNavigationOpen} onClose={() => setIsNavigationOpen(false)} />}
       <div className="content">
         <Header onOpenMenu={() => setIsNavigationOpen(true)} />
         <main className="page"><Outlet /></main>

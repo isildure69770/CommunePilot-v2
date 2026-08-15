@@ -14,6 +14,7 @@ export default function TerrainPage() {
   const { user, users } = useIdentity();
   const { missions, alerts, saveMissions, saveAlerts, notify } = useFieldData();
   const mine = missions.filter((item) => item.assigneeIds.includes(user.id) && item.status !== "Annulée" && !item.archivedAt);
+  const recent = mine.filter((item) => item.status === "Terminée").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Toutes");
   const displayed = tab === "Toutes" ? mine : mine.filter((item) => item.status === tab);
   const [detailsId, setDetailsId] = useState<string>();
@@ -59,6 +60,10 @@ export default function TerrainPage() {
         </div>
       </article>;
     })}{displayed.length === 0 && <div className="empty-state"><CheckCircle2/><strong>Aucune mission</strong><span>Aucune mission ne correspond à ce filtre.</span></div>}</div>
+    <section className="recent-missions" aria-labelledby="recent-missions-title">
+      <h3 id="recent-missions-title">Missions récentes</h3>
+      {recent.length > 0 ? <div>{recent.map((mission) => <button type="button" key={mission.id} onClick={() => setDetailsId(mission.id)}><CheckCircle2/><span><strong>{mission.title}</strong><small>{mission.address || "Adresse à préciser"}</small></span><time>{new Date(mission.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</time></button>)}</div> : <p>Aucune mission terminée récemment.</p>}
+    </section>
     {detailsId && <MissionDetails mission={missions.find((item) => item.id === detailsId)} users={users} onClose={() => setDetailsId(undefined)} onGallery={showGallery}/>}
     {reportId && <FinishForm mission={missions.find((item) => item.id === reportId)} userId={user.id} onClose={() => setReportId(undefined)} onSubmit={(next) => { replace(next); informManagers("Compte rendu reçu", next.title); setReportId(undefined); }}/>}
     {problemId && <MissionProblemForm mission={missions.find((item) => item.id === problemId)} userId={user.id} onClose={() => setProblemId(undefined)} onSubmit={(next) => { replace(next); informManagers("Problème pendant une mission", next.title); setProblemId(undefined); }}/>}
