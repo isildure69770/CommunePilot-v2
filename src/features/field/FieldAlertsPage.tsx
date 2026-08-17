@@ -11,15 +11,25 @@ export default function FieldAlertsPage() {
   const targetAlertId = searchParams.get("alert");
   const { user, users, can } = useIdentity();
   const { alerts, missions, saveAlerts, saveMissions, notify } = useFieldData();
-  const [assignment, setAssignment] = useState<Record<string, string>>(Object.fromEntries(alerts.map((alert) => [alert.id, ""])));
   const agents = users.filter((candidate) => candidate.active && candidate.role === "Agent technique");
+  const [assignment, setAssignment] = useState<Record<string, string>>(() => Object.fromEntries(alerts.map((alert) => [alert.id, agents.some((agent) => agent.id === alert.createdBy) ? alert.createdBy : agents[0]?.id || ""])));
+  useEffect(() => {
+    setAssignment((current) => {
+      const availableAgents = users.filter((candidate) => candidate.active && candidate.role === "Agent technique");
+      const next = { ...current };
+      alerts.forEach((alert) => {
+        if (!(alert.id in next)) next[alert.id] = availableAgents.some((agent) => agent.id === alert.createdBy) ? alert.createdBy : availableAgents[0]?.id || "";
+      });
+      return next;
+    });
+  }, [alerts, users]);
   useEffect(() => { if (!targetAlertId) return; window.setTimeout(() => document.getElementById(`field-alert-${targetAlertId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); }, [targetAlertId, alerts.length]);
   const update = (id: string, patch: Partial<FieldAlert>) => saveAlerts(alerts.map((alert) => alert.id === id ? { ...alert, ...patch, updatedAt: new Date().toISOString() } : alert));
   const remove = (alert: FieldAlert) => { if (!can("signalements", "delete") || !window.confirm("Supprimer cette fiche ? Elle restera dans l’historique.")) return; const now = new Date().toISOString(); update(alert.id, { status: "Supprimée", deletedAt: now, deletedBy: user.id }); };
   function transform(alert: FieldAlert) {
     const agentId = assignment[alert.id]; if (!agentId) { window.alert("Choisissez un agent avant de créer la mission."); return; }
     const now = new Date().toISOString();
-    const mission: Mission = { id: makeId("mission"), title: `Problème ${alert.category}`, description: alert.comment, address: alert.address, latitude: alert.latitude, longitude: alert.longitude, priority: alert.priority ?? "Normale", status: "À faire", dueDate: "", category: alert.category, dossierId: alert.dossierId, assigneeIds: [agentId], attachments: alert.photos, reports: [], problems: [], history: [{ id: makeId("history"), at: now, userId: user.id, label: "Mission créée et affectée depuis Problèmes terrain" }], createdAt: now, updatedAt: now };
+    const mission: Mission = { id: makeId("mission"), title: `Problème ${alert.category}`, description: alert.comment, address: alert.address, latitude: alert.latitude, longitude: alert.longitude, priority: alert.priority ?? "Normale", status: "À faire", dueDate: "", category: alert.category, dossierId: alert.dossierId, assigneeIds: [agentId], attachments: alert.photos || [], reports: [], problems: [], history: [{ id: makeId("history"), at: now, userId: user.id, label: "Mission créée et affectée depuis Problèmes terrain" }], createdAt: now, updatedAt: now };
     saveMissions([mission, ...missions]); update(alert.id, { status: "Transformé en mission", missionId: mission.id }); notify({ userIds: [agentId], title: "Nouvelle mission", message: mission.title, link: "/terrain" });
   }
   return <section className="field-alerts-page"><div className="page-heading"><div><span className="eyebrow">Voirie</span><h2>Problèmes terrain</h2><p>Qualifiez les remontées des agents, priorisez-les puis transformez-les en missions affectées.</p></div></div>
