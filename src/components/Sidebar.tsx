@@ -9,7 +9,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { can } = useIdentity();
+  const { user, can } = useIdentity();
+  const agentPaths = new Set(["/calendrier", "/carte", "/parametres"]);
   return (
     <>
       <button
@@ -32,6 +33,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
           {navigationItems.map((item) => {
+            if (user.role === "Agent technique" && !agentPaths.has(item.path)) return null;
             if ("domain" in item && !can(item.domain)) return null;
             const Icon = item.icon;
             return (

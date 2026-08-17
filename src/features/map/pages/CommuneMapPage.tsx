@@ -211,7 +211,7 @@ export default function CommuneMapPage() {
         </div>
       </div>
 
-      <CustomLayerManager
+      {user.role !== "Agent technique" && <CustomLayerManager
         layers={managedLayers}
         sections={customMap.sections}
         drawingLayerId={drawingLayerId}
@@ -226,7 +226,7 @@ export default function CommuneMapPage() {
         canCreate={can("carte", "create")}
         canEdit={can("carte", "update")}
         canDelete={can("carte", "delete")}
-      />
+      />}
 
       {drawingLayer && (
         <div className="drawing-workflow">
@@ -283,6 +283,7 @@ export default function CommuneMapPage() {
 
       <CommuneMap
         markers={markers}
+        agentMode={user.role === "Agent technique"}
         selectedPosition={selectedPosition}
         onMapClick={handleMapClick}
         customLayers={currentLayers}

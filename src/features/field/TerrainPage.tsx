@@ -7,6 +7,7 @@ import { filesToAttachments } from "./fileUtils";
 import { makeId } from "./repository";
 import type { FieldAlert, FileAttachment, Mission } from "./types";
 import { useFieldData } from "./useFieldData";
+import { reverseGeocode } from "../map/services/reverseGeocoding";
 
 const tabs = ["Toutes", "À faire", "En cours", "Terminées"] as const;
 
@@ -143,7 +144,24 @@ function AlertForm({ onClose, onSubmit, userId }: { onClose(): void; onSubmit(va
   const [geo, setGeo] = useState("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [sendError, setSendError] = useState("");
-  const locate = () => { setGeo("Localisation en cours…"); navigator.geolocation?.getCurrentPosition((position) => { setForm((current) => ({ ...current, latitude: position.coords.latitude, longitude: position.coords.longitude })); setGeo("Position GPS ajoutée"); }, () => setGeo("Localisation refusée ou indisponible.")); };
+  const locate = () => {
+    setGeo("Localisation en cours…");
+    if (!navigator.geolocation) {
+      setGeo("Localisation indisponible sur cet appareil.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const fallback = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      setForm((current) => ({ ...current, address: fallback, latitude, longitude }));
+      setGeo("Position trouvée, recherche de l’adresse…");
+      const result = await reverseGeocode(latitude, longitude);
+      const address = result?.displayName.trim() || fallback;
+      setForm((current) => ({ ...current, address, latitude, longitude }));
+      setGeo(result?.displayName ? "Adresse détectée automatiquement." : "Adresse indisponible : coordonnées GPS ajoutées.");
+    }, () => setGeo("Localisation refusée ou indisponible."));
+  };
   const send = () => {
     setSendError("");
     const now = new Date().toISOString();

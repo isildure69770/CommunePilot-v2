@@ -59,6 +59,7 @@ interface CommuneMapProps {
   height?: number;
   compactControls?: boolean;
   showTerrainProblemsInitially?: boolean;
+  agentMode?: boolean;
 
   selectedPosition?: SelectedPosition | null;
   customLayers?: CustomMapLayer[];
@@ -107,6 +108,7 @@ export default function CommuneMap({
   height = 650,
   compactControls = false,
   showTerrainProblemsInitially = false,
+  agentMode = false,
   selectedPosition = null,
   customLayers = [],
   customSections = [],
@@ -183,14 +185,14 @@ export default function CommuneMap({
     markers.filter((mapMarker) => {
       if (
         mapMarker.type === "signalement" &&
-        !showSignalements
+        !(agentMode || showSignalements)
       ) {
         return false;
       }
 
       if (
         mapMarker.type === "chantier" &&
-        !showChantiers
+        !(agentMode || showChantiers)
       ) {
         return false;
       }
@@ -201,14 +203,14 @@ export default function CommuneMap({
       ) {
         return false;
       }
-      if (mapMarker.type === "mission" && !showMissions) return false;
+      if (mapMarker.type === "mission" && !(agentMode || showMissions)) return false;
 
       return true;
     });
 
   return (
     <div className="commune-map-wrapper">
-      <MapLayerControls
+      {!agentMode && <MapLayerControls
         compact={compactControls}
         showBoundary={showBoundary}
         showRoads={showRoads}
@@ -289,7 +291,7 @@ export default function CommuneMap({
         onToggleCustomLayer={onToggleCustomLayer}
 
         onReset={resetToBoundaryOnly}
-      />
+      />}
 
       <div
         className="commune-map-container"
