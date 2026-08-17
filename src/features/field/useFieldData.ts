@@ -63,7 +63,7 @@ export function useFieldData() {
       alertRepository.save(values);
     } catch (error) {
       if (!(error instanceof DOMException) || !["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"].includes(error.name)) throw error;
-      const lightweight = values.map((alert) => ({ ...alert, photos: alert.photos.map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? "" : photo.dataUrl })) }));
+      const lightweight = values.map((alert) => ({ ...alert, photos: alert.photos.map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? (photo.thumbnailDataUrl || "") : photo.dataUrl })) }));
       alertRepository.save(lightweight);
     }
     void synchronize("alerts", values).then(alertRepository.save).catch(() => undefined);

@@ -1,6 +1,6 @@
 export type MissionStatus = "À faire" | "Prise en compte" | "En cours" | "Terminée" | "Annulée";
 export type MissionPriority = "Basse" | "Normale" | "Haute" | "Urgente";
-export interface FileAttachment { id: string; name: string; type: string; dataUrl: string; addedAt: string; kind: "photo" | "document"; phase?: "avant" | "après" | "problème"; }
+export interface FileAttachment { id: string; name: string; type: string; dataUrl: string; thumbnailDataUrl?: string; addedAt: string; kind: "photo" | "document"; phase?: "avant" | "après" | "problème"; }
 export interface HistoryEntry { id: string; at: string; userId: string; label: string; }
 export interface InterventionReport { agentId: string; completedAt: string; comment: string; outcome: "terminée" | "nouvelle-intervention"; photos: FileAttachment[]; }
 export interface MissionProblem { id: string; agentId: string; createdAt: string; comment: string; photos: FileAttachment[]; }
