@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   CircleMarker,
@@ -68,6 +68,7 @@ interface CommuneMapProps {
   showTerrainProblemsInitially?: boolean;
   agentMode?: boolean;
   agentPosition?: AgentPosition | null;
+  agentFocusRequest?: number;
 
   selectedPosition?: SelectedPosition | null;
   customLayers?: CustomMapLayer[];
@@ -121,11 +122,14 @@ function openItinerary(from: AgentPosition, to: { latitude: number; longitude: n
   window.open(`https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=driving`, "_blank", "noopener,noreferrer");
 }
 
-function AgentMapFocus({ position }: { position: AgentPosition }) {
+function AgentMapFocus({ position, request }: { position: AgentPosition; request: number }) {
   const map = useMap();
+  const handledRequest = useRef(0);
   useEffect(() => {
+    if (!request || request === handledRequest.current) return;
+    handledRequest.current = request;
     map.flyTo([position.latitude, position.longitude], Math.max(map.getZoom(), 16), { duration: .7 });
-  }, [map, position.latitude, position.longitude]);
+  }, [map, position.latitude, position.longitude, request]);
   return null;
 }
 
@@ -139,6 +143,7 @@ export default function CommuneMap({
   showTerrainProblemsInitially = false,
   agentMode = false,
   agentPosition = null,
+  agentFocusRequest = 0,
   selectedPosition = null,
   customLayers = [],
   customSections = [],
@@ -351,7 +356,7 @@ export default function CommuneMap({
           />
 
           {agentMode && agentPosition && <>
-            <AgentMapFocus position={agentPosition}/>
+            <AgentMapFocus position={agentPosition} request={agentFocusRequest}/>
             <CircleMarker center={[agentPosition.latitude, agentPosition.longitude]} radius={11} pathOptions={{ color: "#ffffff", weight: 4, fillColor: "#1760c3", fillOpacity: 1 }} bubblingMouseEvents={false}>
               <Popup><div className="map-popup-content"><strong>📍 Ma position</strong><span>Position GPS de l’agent</span>{agentPosition.accuracy && <span>Précision : environ {Math.round(agentPosition.accuracy)} m</span>}</div></Popup>
             </CircleMarker>

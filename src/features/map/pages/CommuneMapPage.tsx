@@ -49,6 +49,7 @@ export default function CommuneMapPage() {
   const { user, can } = useIdentity();
   const [agentPosition, setAgentPosition] = useState<AgentPosition | null>(null);
   const [agentLocationStatus, setAgentLocationStatus] = useState<"searching" | "active" | "unavailable">("searching");
+  const [agentFocusRequest, setAgentFocusRequest] = useState(0);
   const customMap = useCustomMapLayers(user.id);
   const managedLayers = customMap.layers.filter((layer) => !layer.deletedAt);
   const currentLayers = managedLayers.filter((layer) => !layer.archived);
@@ -230,7 +231,7 @@ export default function CommuneMapPage() {
         </div>
       </div>
 
-      {user.role === "Agent technique" && <div className={`agent-location-status is-${agentLocationStatus}`}><span className="agent-location-dot"/>{agentLocationStatus === "active" ? "Ma position est affichée et actualisée" : agentLocationStatus === "searching" ? "Recherche de votre position…" : "Autorisez la localisation dans les réglages du téléphone pour afficher les distances"}</div>}
+      {user.role === "Agent technique" && <div className={`agent-location-status is-${agentLocationStatus}`}><span className="agent-location-dot"/><span>{agentLocationStatus === "active" ? "Ma position est affichée et actualisée" : agentLocationStatus === "searching" ? "Recherche de votre position…" : "Autorisez la localisation dans les réglages du téléphone pour afficher les distances"}</span>{agentLocationStatus === "active" && <button type="button" onClick={() => setAgentFocusRequest((value) => value + 1)}>Voir ma position</button>}</div>}
 
       {user.role !== "Agent technique" && <CustomLayerManager
         layers={managedLayers}
@@ -306,6 +307,7 @@ export default function CommuneMapPage() {
         markers={markers}
         agentMode={user.role === "Agent technique"}
         agentPosition={user.role === "Agent technique" ? agentPosition : null}
+        agentFocusRequest={agentFocusRequest}
         selectedPosition={user.role === "Agent technique" ? null : selectedPosition}
         onMapClick={user.role === "Agent technique" ? undefined : handleMapClick}
         customLayers={user.role === "Agent technique" ? [] : currentLayers}
