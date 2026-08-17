@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock3, FileText, Flag, Info, Map, MapPin, Navigation, Play, X, ZoomIn, ZoomOut } from "lucide-react";
+import { AlertTriangle, Bell, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Clock3, FileText, Flag, Info, Map, MapPin, Navigation, Play, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useIdentity } from "../access/LocalIdentityProvider";
 import { dossierActivityRepository } from "../dossiers/services/dossierActivityRepository";
@@ -31,7 +31,6 @@ export default function TerrainPage() {
   const { user, users } = useIdentity();
   const { missions, alerts, saveMissions, saveAlerts, notify } = useFieldData();
   const mine = missions.filter((item) => item.assigneeIds.includes(user.id) && item.status !== "Annulée" && !item.archivedAt);
-  const recent = mine.filter((item) => item.status === "Terminée").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
   const [tab, setTab] = useState<(typeof tabs)[number]>("Toutes");
   const displayed = mine.filter((item) => matchesTab(item, tab));
   const myAlerts = alerts.filter((item) => item.createdBy === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -62,13 +61,32 @@ export default function TerrainPage() {
   const showGallery = (photos: FileAttachment[], index: number) => setGallery({ photos, index });
 
   const activeCount = mine.filter((item) => item.status !== "Terminée").length;
-  const inProgressCount = mine.filter((item) => item.status === "En cours").length;
+  const urgentCount = mine.filter((item) => item.status !== "Terminée" && item.priority === "Urgente").length;
+  const nextMission = [...mine].filter((item) => item.status !== "Terminée").sort((a, b) => {
+    const priority = { Urgente: 0, Haute: 1, Normale: 2, Basse: 3 };
+    return priority[a.priority] - priority[b.priority] || (a.dueDate || "9999").localeCompare(b.dueDate || "9999");
+  })[0];
+  const nextPhotos = nextMission ? [...nextMission.attachments.filter((file) => file.kind === "photo"), ...nextMission.reports.flatMap((report) => report.photos)] : [];
 
   return <section className="terrain-page">
-    <header className="terrain-heading"><div><span className="terrain-agent-name">{user.firstName} <i/> Agent</span><h2>Mes interventions</h2><p>Votre feuille de route terrain</p></div></header>
-    <section className="terrain-summary" aria-label="Résumé des missions"><span className="terrain-summary-icon"><ClipboardList/></span><div><small>Aujourd’hui</small><strong>{activeCount} mission{activeCount > 1 ? "s" : ""} à réaliser</strong><p>{inProgressCount ? `${inProgressCount} en cours` : "Prêt à commencer"}</p></div><span className="terrain-summary-count">{activeCount}</span></section>
-    <nav className="terrain-section-tabs" aria-label="Rubriques terrain"><button type="button" className={section === "missions" ? "active" : ""} onClick={() => setSection("missions")}><ClipboardList/>Mes missions</button><Link to="/carte"><Map/>Carte</Link><button type="button" className={section === "alerts" ? "active" : ""} onClick={() => setSection("alerts")}><AlertTriangle/>Alertes{myAlerts.length > 0 && <strong>{myAlerts.length}</strong>}</button></nav>
+    <header className="agent-home-heading"><div><h2>Bonjour {user.firstName} <span aria-hidden="true">👋</span></h2><p>Agent technique</p></div><Link to="/notifications" aria-label="Notifications"><Bell/><strong>{urgentCount || myAlerts.length || 0}</strong></Link></header>
+    <section className="agent-day-summary" aria-label="Synthèse du jour"><div><small>Aujourd’hui</small><strong>{activeCount} mission{activeCount > 1 ? "s" : ""}</strong></div><i/><div><strong>{urgentCount}</strong><small>urgente{urgentCount > 1 ? "s" : ""}</small></div></section>
+    <nav className="agent-primary-nav" aria-label="Actions principales"><Link to="/missions"><ClipboardList/><span>Mes missions</span></Link><button type="button" onClick={() => setSearchParams({ "nouvelle-alerte": "1" })}><AlertTriangle/><span>Nouvelle alerte</span></button><Link to="/carte"><Map/><span>Carte</span></Link><Link to="/calendrier"><Clock3/><span>Agenda</span></Link></nav>
+    <div className="agent-section-title"><span>Prochaine mission prioritaire</span><button type="button" onClick={() => setSection(section === "missions" ? "alerts" : "missions")}>{section === "missions" ? "Mes alertes" : "Mes missions"}</button></div>
     {section === "missions" && <>
+    {nextMission && <article className="agent-priority-card">
+      <button className="agent-priority-visual" type="button" onClick={() => nextPhotos.length && showGallery(nextPhotos, 0)}>{nextPhotos[0] ? <img src={nextPhotos[0].dataUrl} alt={nextPhotos[0].name}/> : <span><MapPin/></span>}<em className={`priority-${nextMission.priority.toLowerCase()}`}>{nextMission.priority}</em></button>
+      <button className="agent-priority-copy" type="button" onClick={() => setDetailsId(nextMission.id)}><strong>{nextMission.title}</strong><span>{nextMission.address || "Adresse à préciser"}</span><small><MapPin/> {nextMission.latitude != null ? "Position GPS disponible" : durationLabel(nextMission)}</small><ChevronRight/></button>
+    </article>}
+    {!nextMission && <div className="agent-empty-mission"><CheckCircle2/><strong>Aucune mission aujourd’hui</strong><span>Votre feuille de route est à jour.</span></div>}
+    {nextMission && <div className="agent-home-actions">
+      {nextMission.status === "À faire" && <button className="agent-action-start" onClick={() => transition(nextMission, "Prise en compte", "Mission prise en compte")}><Check/>Prendre en compte</button>}
+      {nextMission.status === "Prise en compte" && <button className="agent-action-start" onClick={() => transition(nextMission, "En cours", "Intervention commencée")}><Play/>Commencer</button>}
+      {nextMission.status === "En cours" && <button className="agent-action-start" onClick={() => setReportId(nextMission.id)}><CheckCircle2/>Terminer</button>}
+      <button className="agent-action-route" onClick={() => itinerary(nextMission)} disabled={!nextMission.address && nextMission.latitude == null}><Navigation/>Itinéraire</button>
+      <button className="agent-action-problem" onClick={() => setProblemId(nextMission.id)}><Camera/>Signaler un problème</button>
+    </div>}
+    <details className="agent-all-missions"><summary>Voir toutes mes missions ({activeCount})</summary>
     <nav className="terrain-status-tabs" aria-label="Filtrer les missions">{tabs.map((status) => <button className={tab === status ? "active" : ""} type="button" key={status} onClick={() => setTab(status)}><span>{status}</span><strong>{mine.filter((item) => matchesTab(item, status)).length}</strong></button>)}</nav>
     <div className="terrain-card-list">{displayed.map((mission) => {
       const photos = [...mission.attachments.filter((file) => file.kind === "photo"), ...mission.reports.flatMap((report) => report.photos)];
@@ -87,13 +105,8 @@ export default function TerrainPage() {
           {mission.status !== "Terminée" && <button className="workflow-problem" onClick={() => setProblemId(mission.id)}><Flag/>Signaler un problème</button>}
         </div>
       </article>;
-    })}{displayed.length === 0 && <div className="empty-state"><CheckCircle2/><strong>Aucune mission</strong><span>Aucune mission ne correspond à ce filtre.</span></div>}</div>
-    <section className="recent-missions" aria-labelledby="recent-missions-title">
-      <h3 id="recent-missions-title">Missions récentes</h3>
-      {recent.length > 0 ? <div>{recent.map((mission) => <button type="button" key={mission.id} onClick={() => setDetailsId(mission.id)}><CheckCircle2/><span><strong>{mission.title}</strong><small>{mission.address || "Adresse à préciser"}</small></span><time>{new Date(mission.updatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}</time></button>)}</div> : <p>Aucune mission terminée récemment.</p>}
-    </section></>}
+    })}{displayed.length === 0 && <div className="empty-state"><CheckCircle2/><strong>Aucune mission</strong><span>Aucune mission ne correspond à ce filtre.</span></div>}</div></details></>}
     {section === "alerts" && <section className="terrain-alerts-view"><header><div><span className="eyebrow">Remontées terrain</span><h3>Mes alertes</h3></div></header>{myAlerts.length > 0 ? <div>{myAlerts.map((alert) => <article key={alert.id}><span className={`alert-priority priority-${alert.priority.toLowerCase()}`}>{alert.priority}</span><strong>{alert.category}</strong><p>{alert.comment}</p><small><MapPin/>{alert.address || "Position transmise"} · {new Date(alert.createdAt).toLocaleDateString("fr-FR")}</small><em>{alert.status}</em></article>)}</div> : <div className="empty-state"><AlertTriangle/><strong>Aucune alerte envoyée</strong><span>Utilisez le bouton « Nouvelle alerte » pour prévenir les élus.</span></div>}</section>}
-    <button className="new-alert-button" type="button" onClick={() => setSearchParams({ "nouvelle-alerte": "1" })}><AlertTriangle size={18}/> Nouvelle alerte</button>
     {detailsId && <MissionDetails mission={missions.find((item) => item.id === detailsId)} users={users} onClose={() => setDetailsId(undefined)} onGallery={showGallery}/>}
     {reportId && <FinishForm mission={missions.find((item) => item.id === reportId)} userId={user.id} onClose={() => setReportId(undefined)} onSubmit={(next) => { replace(next); informManagers("Compte rendu reçu", next.title); setReportId(undefined); }}/>}
     {problemId && <MissionProblemForm mission={missions.find((item) => item.id === problemId)} userId={user.id} onClose={() => setProblemId(undefined)} onSubmit={(next) => { replace(next); informManagers("Problème pendant une mission", next.title); setProblemId(undefined); }}/>}
@@ -110,8 +123,13 @@ function Modal({ children, onClose, className = "" }: { children: React.ReactNod
 function AlertForm({ onClose, onSubmit, userId }: { onClose(): void; onSubmit(value: FieldAlert): void; userId: string }) {
   const [form, setForm] = useState({ category: "Voirie" as FieldAlert["category"], priority: "Normale" as FieldAlert["priority"], comment: "", address: "", latitude: undefined as number | undefined, longitude: undefined as number | undefined, photos: [] as FieldAlert["photos"] });
   const [geo, setGeo] = useState("");
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const locate = () => { setGeo("Localisation en cours…"); navigator.geolocation?.getCurrentPosition((position) => { setForm((current) => ({ ...current, latitude: position.coords.latitude, longitude: position.coords.longitude })); setGeo("Position GPS ajoutée"); }, () => setGeo("Localisation refusée ou indisponible.")); };
-  return <Modal onClose={onClose}><div className="modal-header"><div><span className="eyebrow">Remontée aux élus</span><h3>Nouvelle alerte</h3></div><button className="icon-button" onClick={onClose} aria-label="Fermer"><X/></button></div><form className="field-form" onSubmit={(event) => { event.preventDefault(); const now = new Date().toISOString(); onSubmit({ ...form, id: makeId("alerte"), status: "Nouveau", createdBy: userId, createdAt: now, updatedAt: now }); }}><p className="form-help">Cette alerte crée un nouveau problème terrain. Elle est distincte d’un problème rencontré pendant une mission.</p><div className="form-row"><label>Catégorie<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as FieldAlert["category"] })}><option>Voirie</option><option>Bâtiment</option><option>Espaces verts</option><option>Eau</option><option>Sécurité</option><option>Autre</option></select></label><label>Urgence<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value as FieldAlert["priority"] })}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label></div><label>Description<textarea required rows={4} value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} placeholder="Décrivez précisément le problème…"/></label><label>Photo(s)<input type="file" accept="image/*" capture="environment" multiple onChange={async (event) => setForm({ ...form, photos: await filesToAttachments(event.target.files, "photo") })}/></label><label>Adresse<input value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })}/></label><button type="button" className="secondary-button" onClick={locate}><MapPin/>Utiliser ma position</button>{geo && <small>{geo}</small>}<button className="terrain-submit">Envoyer aux responsables</button></form></Modal>;
+  const send = () => { const now = new Date().toISOString(); onSubmit({ ...form, id: makeId("alerte"), status: "Nouveau", createdBy: userId, createdAt: now, updatedAt: now }); };
+  return <Modal onClose={onClose} className="agent-alert-wizard"><div className="modal-header"><button className="icon-button" onClick={step === 1 ? onClose : () => setStep((step - 1) as 1 | 2)} aria-label="Retour"><ChevronLeft/></button><h3>Nouvelle alerte</h3><button className="icon-button" onClick={onClose} aria-label="Fermer"><X/></button></div><ol className="alert-wizard-steps"><li className={step >= 1 ? "active" : ""}><b>1</b>Photo</li><li className={step >= 2 ? "active" : ""}><b>2</b>Infos</li><li className={step >= 3 ? "active" : ""}><b>3</b>Envoyer</li></ol>
+  {step === 1 && <div className="alert-photo-step"><label>{form.photos[0] ? <img src={form.photos[0].dataUrl} alt="Aperçu de l’alerte"/> : <><Camera/><strong>Prendre une photo</strong><span>Photographiez le problème terrain</span></>}<input type="file" accept="image/*" capture="environment" multiple onChange={async (event) => setForm({ ...form, photos: await filesToAttachments(event.target.files, "photo") })}/></label><div><label className="secondary-button">Galerie<input type="file" accept="image/*" multiple onChange={async (event) => setForm({ ...form, photos: await filesToAttachments(event.target.files, "photo") })}/></label><button className="primary-button" type="button" onClick={() => setStep(2)}>Continuer</button></div></div>}
+  {step === 2 && <form className="field-form" onSubmit={(event) => { event.preventDefault(); setStep(3); }}><label>Type de problème<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as FieldAlert["category"] })}><option>Voirie</option><option>Bâtiment</option><option>Espaces verts</option><option>Eau</option><option>Sécurité</option><option>Autre</option></select></label><label>Urgence<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value as FieldAlert["priority"] })}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label><label>Localisation<input value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder="Adresse ou position actuelle"/></label><button type="button" className="secondary-button" onClick={locate}><MapPin/>Utiliser ma position</button>{geo && <small>{geo}</small>}<label>Description<textarea required rows={4} value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} placeholder="Décrivez le problème…"/></label><button className="primary-button">Suivant</button></form>}
+  {step === 3 && <div className="alert-review-step"><span className="eyebrow">Résumé</span>{form.photos[0] && <img src={form.photos[0].dataUrl} alt="Photo de l’alerte"/>}<strong>{form.category} · {form.priority}</strong><p>{form.address || "Position GPS transmise"}</p><p>{form.comment}</p><button className="terrain-submit" type="button" onClick={send}><Navigation/>Envoyer l’alerte</button><button className="secondary-button" type="button" onClick={() => setStep(2)}>Retour</button></div>}</Modal>;
 }
 
 function FinishForm({ mission, userId, onClose, onSubmit }: { mission?: Mission; userId: string; onClose(): void; onSubmit(value: Mission): void }) {
