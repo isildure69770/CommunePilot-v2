@@ -88,7 +88,15 @@ interface CommuneMapProps {
   onCreateAtPosition?: (kind: "signalement" | "chantier" | "mission") => void;
 }
 
-const PRIORITY_COLORS: Record<string, string> = { Faible: "#48a56f", Basse: "#48a56f", Normale: "#3f83c5", Haute: "#e09a35", Urgente: "#d84f4f" };
+const PRIORITY_COLORS: Record<string, string> = { Faible: "#32945a", Basse: "#32945a", Normale: "#32945a", Haute: "#e08a25", Urgente: "#d6413e" };
+
+function isValidatedStatus(status: string) {
+  return ["Terminée", "Terminé", "Traitée", "Résolu", "Classé", "Validé", "Validée", "Réalisé", "Réalisée", "Transformé en mission"].includes(status);
+}
+
+function validatedMapIcon() {
+  return L.divIcon({ className: "map-validated-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11"/><path d="m8.5 14 3.5 3.5 7.5-8"/></svg></span>`, iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18] });
+}
 
 function terrainProblemIcon(priority: string) {
   const color = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Normale;
@@ -97,15 +105,15 @@ function terrainProblemIcon(priority: string) {
 }
 
 function missionAgentIcon(priority: string, status: string) {
-  if (status === "Terminée") {
-    return L.divIcon({ className: "mission-completed-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="11"/><path d="m8.5 14 3.5 3.5 7.5-8"/></svg></span>`, iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18] });
-  }
+  if (isValidatedStatus(status)) return validatedMapIcon();
   const color = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Normale;
   return L.divIcon({ className: "mission-agent-marker", html: `<span style="background:${color}" aria-hidden="true"><svg viewBox="0 0 26 28"><path class="helmet" d="M7 10a6 6 0 0 1 12 0M5 11h16"/><circle cx="13" cy="14" r="3.5"/><path d="M6.5 25c.5-4.5 2.7-6.7 6.5-6.7s6 2.2 6.5 6.7M13 18.5V25"/><path class="vest" d="m9.5 19.2 3.5 3 3.5-3"/></svg></span>`, iconSize: [26, 28], iconAnchor: [13, 14], popupAnchor: [0, -18] });
 }
 
-function chantierConeIcon() {
-  return L.divIcon({ className: "chantier-cone-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 32 36"><path class="cone" d="M16 2 25 29H7L16 2Z"/><path class="stripe" d="m11.2 16 9.6 0 2 6H9.2l2-6Z"/><path class="base" d="M4 28h24l2 5H2l2-5Z"/></svg></span>`, iconSize: [32, 36], iconAnchor: [4, 33], popupAnchor: [12, -31] });
+function chantierConeIcon(priority: string, status: string) {
+  if (isValidatedStatus(status)) return validatedMapIcon();
+  const color = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Normale;
+  return L.divIcon({ className: "chantier-cone-marker", html: `<span aria-hidden="true"><svg viewBox="0 0 32 36"><path class="cone" style="fill:${color}" d="M16 2 25 29H7L16 2Z"/><path class="stripe" d="m11.2 16 9.6 0 2 6H9.2l2-6Z"/><path class="base" d="M4 28h24l2 5H2l2-5Z"/></svg></span>`, iconSize: [32, 36], iconAnchor: [4, 33], popupAnchor: [12, -31] });
 }
 
 // Mairie de Montrottier — point townhall issu des données OSM locales.
@@ -461,13 +469,13 @@ export default function CommuneMap({
 
           {visibleMarkers.map(
             (mapMarker) => mapMarker.type === "signalement" ? (
-              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={terrainProblemIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover>
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={isValidatedStatus(mapMarker.status) ? validatedMapIcon() : terrainProblemIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover>
                 <Popup><div className="map-popup-content"><strong>⚠️ {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : {mapMarker.sourceKind === "field-alert" ? "Remontée terrain" : "Problème terrain"}</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.date&&<span>Créée le : {new Date(mapMarker.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}{!agentMode && mapMarker.sourceKind !== "field-alert" && <button className="primary-button compact-button" type="button" onClick={() => navigate(`/signalements?signalement=${mapMarker.sourceId}`)}>Ouvrir la fiche</button>}</div></Popup>
               </Marker>
             ) : mapMarker.type === "mission" ? (
               <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={missionAgentIcon(mapMarker.priority, mapMarker.status)} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>{mapMarker.status === "Terminée" ? "✅" : "👷"} {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Mission agent</span><span>Statut : {mapMarker.status === "Terminée" ? "Réalisée" : mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}</div></Popup></Marker>
             ) : mapMarker.type === "chantier" ? (
-              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={chantierConeIcon()} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>🚧 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Chantier</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}</div></Popup></Marker>
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={chantierConeIcon(mapMarker.priority, mapMarker.status)} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>🚧 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Chantier</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}</div></Popup></Marker>
             ) : (
               <Marker
                 key={mapMarker.id}
