@@ -356,7 +356,7 @@ export function useCommuneMap() {
             );
 
         const fieldAlertMarkers = fieldAlerts
-          .filter((alert) => alert.status !== "Supprimée" && hasValidCoordinates(alert.latitude, alert.longitude))
+          .filter((alert) => alert.status !== "Supprimée" && !alert.missionId && alert.status !== "Transformé en mission" && hasValidCoordinates(alert.latitude, alert.longitude))
           .map((alert): CommuneMapMarker => ({
             id: `field-alert-${alert.id}`,
             sourceId: alert.id,
