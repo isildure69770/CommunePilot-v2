@@ -5,8 +5,8 @@ import type { Signalement } from "../../signalements/types/signalement";
 import type {
   EquipmentIntervention,
 } from "../../equipments/services/equipmentInterventions";
-import { missionRepository } from "../../field/repository";
-import type { Mission } from "../../field/types";
+import { alertRepository, missionRepository } from "../../field/repository";
+import type { FieldAlert, Mission } from "../../field/types";
 
 const CHANTIERS_STORAGE_KEY = "communepilot-chantiers";
 const SIGNALEMENTS_STORAGE_KEY = "communepilot-signalements";
@@ -75,6 +75,8 @@ export interface CommuneMapMarker {
 
   description: string;
 
+  sourceKind?: "field-alert" | "signalement";
+
   equipmentId?: string;
   date?: string;
 }
@@ -86,6 +88,7 @@ export function useCommuneMap() {
   const [signalements, setSignalements] =
     useState<Signalement[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [fieldAlerts, setFieldAlerts] = useState<FieldAlert[]>([]);
 
   const [
     interventionMarkers,
@@ -232,6 +235,7 @@ export function useCommuneMap() {
       loadSignalements(),
     );
     setMissions(missionRepository.list());
+    setFieldAlerts(alertRepository.list());
 
     void loadInterventionMarkers();
   }
@@ -244,6 +248,7 @@ export function useCommuneMap() {
     }
 
     window.addEventListener("communepilot:missions", refresh);
+    window.addEventListener("communepilot:alerts", refresh);
     window.addEventListener(
       "storage",
       handleStorage,
@@ -255,6 +260,7 @@ export function useCommuneMap() {
         handleStorage,
       );
       window.removeEventListener("communepilot:missions", refresh);
+      window.removeEventListener("communepilot:alerts", refresh);
     };
   }, []);
 
@@ -344,14 +350,34 @@ export function useCommuneMap() {
 
                 description:
                   signalement.description,
+
+                sourceKind: "signalement",
               }),
             );
+
+        const fieldAlertMarkers = fieldAlerts
+          .filter((alert) => alert.status !== "Supprimée" && hasValidCoordinates(alert.latitude, alert.longitude))
+          .map((alert): CommuneMapMarker => ({
+            id: `field-alert-${alert.id}`,
+            sourceId: alert.id,
+            sourceKind: "field-alert",
+            type: "signalement",
+            title: alert.category || "Remontée terrain",
+            location: alert.address || `${alert.latitude!.toFixed(6)}, ${alert.longitude!.toFixed(6)}`,
+            latitude: alert.latitude!,
+            longitude: alert.longitude!,
+            status: alert.status || "Nouveau",
+            priority: alert.priority || "Normale",
+            description: alert.comment || "Aucune description",
+            date: alert.createdAt,
+          }));
 
         const missionMarkers = missions.filter((mission) => hasValidCoordinates(mission.latitude, mission.longitude) && !mission.archivedAt).map((mission): CommuneMapMarker => ({ id: `mission-${mission.id}`, sourceId: mission.id, type: "mission", title: mission.title, location: mission.address, latitude: mission.latitude!, longitude: mission.longitude!, status: mission.status, priority: mission.priority, description: mission.description, date: mission.updatedAt }));
 
         return [
           ...chantierMarkers,
           ...signalementMarkers,
+          ...fieldAlertMarkers,
           ...missionMarkers,
           ...interventionMarkers,
         ];
@@ -359,6 +385,7 @@ export function useCommuneMap() {
       [
         chantiers,
         signalements,
+        fieldAlerts,
         missions,
         interventionMarkers,
       ],
@@ -370,11 +397,11 @@ export function useCommuneMap() {
         total:
           markers.length,
 
-        chantiers:
-          chantiers.length,
+        chantiers: markers.filter((marker) => marker.type === "chantier").length,
 
-        signalements:
-          signalements.length,
+        signalements: markers.filter((marker) => marker.type === "signalement").length,
+
+        missions: markers.filter((marker) => marker.type === "mission").length,
 
         urgents:
           markers.filter(
@@ -385,7 +412,9 @@ export function useCommuneMap() {
 
         sansCoordonnees:
           chantiers.length +
-          signalements.length -
+          signalements.length +
+          fieldAlerts.filter((alert) => alert.status !== "Supprimée").length +
+          missions.filter((mission) => !mission.archivedAt).length -
           markers.filter(
             (marker) =>
               marker.type !==
@@ -396,6 +425,8 @@ export function useCommuneMap() {
       markers,
       chantiers,
       signalements,
+      fieldAlerts,
+      missions,
     ]);
 
   return {

@@ -29,6 +29,16 @@ interface SelectedPosition {
   location?: string;
 }
 
+function MapStatistics({ statistics, compact = false }: { statistics: { total: number; chantiers: number; signalements: number; missions: number; urgents: number }; compact?: boolean }) {
+  return <div className={`commune-map-statistics${compact ? " is-agent-compact" : ""}`}>
+    {!compact && <article><span>Total</span><strong>{statistics.total}</strong></article>}
+    <article><span>Missions</span><strong>{statistics.missions}</strong></article>
+    <article><span>Chantiers</span><strong>{statistics.chantiers}</strong></article>
+    <article><span>Remontées terrain</span><strong>{statistics.signalements}</strong></article>
+    {!compact && <article><span>Urgents</span><strong>{statistics.urgents}</strong></article>}
+  </div>;
+}
+
 export default function CommuneMapPage() {
   const { user, can } = useIdentity();
   const customMap = useCustomMapLayers(user.id);
@@ -162,9 +172,7 @@ export default function CommuneMapPage() {
           </h2>
 
           <p>
-            Visualisez les chantiers et les
-            signalements enregistrés dans
-            CommunePilot.
+            Consultez les missions, les chantiers et les remontées terrain enregistrés dans CommunePilot.
           </p>
         </div>
 
@@ -177,27 +185,7 @@ export default function CommuneMapPage() {
         </button>
       </div>
 
-      <div className="commune-map-statistics">
-        <article>
-          <span>Total</span>
-          <strong>{statistics.total}</strong>
-        </article>
-
-        <article>
-          <span>Chantiers</span>
-          <strong>{statistics.chantiers}</strong>
-        </article>
-
-        <article>
-          <span>Signalements</span>
-          <strong>{statistics.signalements}</strong>
-        </article>
-
-        <article>
-          <span>Urgents</span>
-          <strong>{statistics.urgents}</strong>
-        </article>
-      </div>
+      {user.role !== "Agent technique" && <MapStatistics statistics={statistics}/>}
 
       <div className="commune-map-legend">
         <div>
@@ -207,7 +195,12 @@ export default function CommuneMapPage() {
 
         <div>
           <span className="legend-dot signalement-dot" />
-          Signalements
+          Remontées terrain
+        </div>
+
+        <div>
+          <span className="legend-dot mission-dot" />
+          Missions
         </div>
       </div>
 
@@ -236,7 +229,7 @@ export default function CommuneMapPage() {
         </div>
       )}
 
-      {selectedPosition && (
+      {user.role !== "Agent technique" && selectedPosition && (
         <div className="map-create-panel">
           <div>
             <strong>
@@ -284,10 +277,10 @@ export default function CommuneMapPage() {
       <CommuneMap
         markers={markers}
         agentMode={user.role === "Agent technique"}
-        selectedPosition={selectedPosition}
-        onMapClick={handleMapClick}
-        customLayers={currentLayers}
-        customSections={customMap.visibleSections}
+        selectedPosition={user.role === "Agent technique" ? null : selectedPosition}
+        onMapClick={user.role === "Agent technique" ? undefined : handleMapClick}
+        customLayers={user.role === "Agent technique" ? [] : currentLayers}
+        customSections={user.role === "Agent technique" ? [] : customMap.visibleSections}
         drawingCoordinates={drawingCoordinates}
         waypointCoordinates={drawingMode === "automatic" ? routePoints : []}
         drawingColor={drawingLayer?.color}
@@ -312,6 +305,8 @@ export default function CommuneMapPage() {
           localisé.
         </div>
       )}
+
+      {user.role === "Agent technique" && <MapStatistics statistics={statistics} compact/>}
 
       <SignalementForm
         isOpen={isSignalementFormOpen}

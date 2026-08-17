@@ -14,7 +14,7 @@ async function uploadAttachment(attachment: FileAttachment) {
 
 async function uploadFiles<T>(collection: RemoteCollection, values: T[]) {
   if (collection === "alerts") {
-    const uploaded = await Promise.all((values as FieldAlert[]).map(async (alert) => ({ ...alert, photos: await Promise.all(alert.photos.map(uploadAttachment)) })));
+    const uploaded = await Promise.all((values as FieldAlert[]).map(async (alert) => ({ ...alert, photos: await Promise.all((alert.photos || []).map(uploadAttachment)) })));
     return uploaded as T[];
   }
   const uploaded = await Promise.all((values as Mission[]).map(async (mission) => ({ ...mission, attachments: await Promise.all(mission.attachments.map(uploadAttachment)), reports: await Promise.all(mission.reports.map(async (report) => ({ ...report, photos: await Promise.all(report.photos.map(uploadAttachment)) }))) })));
@@ -63,7 +63,7 @@ export function useFieldData() {
       alertRepository.save(values);
     } catch (error) {
       if (!(error instanceof DOMException) || !["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"].includes(error.name)) throw error;
-      const lightweight = values.map((alert) => ({ ...alert, photos: alert.photos.map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? (photo.thumbnailDataUrl || "") : photo.dataUrl })) }));
+      const lightweight = values.map((alert) => ({ ...alert, photos: (alert.photos || []).map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? (photo.thumbnailDataUrl || "") : photo.dataUrl })) }));
       alertRepository.save(lightweight);
     }
     void synchronize("alerts", values).then(alertRepository.save).catch(() => undefined);
