@@ -215,20 +215,13 @@ export default function CommuneMapPage() {
       {user.role !== "Agent technique" && <MapStatistics statistics={statistics}/>}
 
       <div className="commune-map-legend">
-        <div>
-          <span className="legend-dot chantier-dot" />
-          Chantiers
-        </div>
-
-        <div>
-          <span className="legend-dot signalement-dot" />
-          Remontées terrain
-        </div>
-
-        <div>
-          <span className="legend-dot mission-dot" />
-          Missions
-        </div>
+        <div><span className="legend-map-icon legend-cone"/>Chantier</div>
+        <div><span className="legend-map-icon legend-warning">!</span>Remontée terrain</div>
+        <div><span className="legend-map-icon legend-agent">👷</span>Mission agent</div>
+        <div><span className="legend-map-icon legend-validated">✓</span>Réalisé / validé</div>
+        <div className="legend-severity"><span className="legend-level is-green"/>Normal</div>
+        <div className="legend-severity"><span className="legend-level is-orange"/>Important</div>
+        <div className="legend-severity"><span className="legend-level is-red"/>Urgent</div>
       </div>
 
       {user.role === "Agent technique" && <div className={`agent-location-status is-${agentLocationStatus}`}><span className="agent-location-dot"/><span>{agentLocationStatus === "active" ? "Ma position est affichée et actualisée" : agentLocationStatus === "searching" ? "Recherche de votre position…" : "Autorisez la localisation dans les réglages du téléphone pour afficher les distances"}</span>{agentLocationStatus === "active" && <button type="button" onClick={() => setAgentFocusRequest((value) => value + 1)}>Voir ma position</button>}</div>}
