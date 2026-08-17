@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import CommuneMap from "../components/CommuneMap";
 
@@ -29,6 +29,12 @@ interface SelectedPosition {
   location?: string;
 }
 
+interface AgentPosition {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
 function MapStatistics({ statistics, compact = false }: { statistics: { total: number; chantiers: number; signalements: number; missions: number; urgents: number }; compact?: boolean }) {
   return <div className={`commune-map-statistics${compact ? " is-agent-compact" : ""}`}>
     {!compact && <article><span>Total</span><strong>{statistics.total}</strong></article>}
@@ -41,6 +47,8 @@ function MapStatistics({ statistics, compact = false }: { statistics: { total: n
 
 export default function CommuneMapPage() {
   const { user, can } = useIdentity();
+  const [agentPosition, setAgentPosition] = useState<AgentPosition | null>(null);
+  const [agentLocationStatus, setAgentLocationStatus] = useState<"searching" | "active" | "unavailable">("searching");
   const customMap = useCustomMapLayers(user.id);
   const managedLayers = customMap.layers.filter((layer) => !layer.deletedAt);
   const currentLayers = managedLayers.filter((layer) => !layer.archived);
@@ -79,6 +87,24 @@ export default function CommuneMapPage() {
   const [sectionAssignee, setSectionAssignee] = useState("");
   const [sectionNotes, setSectionNotes] = useState("");
   const [sectionSide, setSectionSide] = useState<InterventionSide>("gauche");
+
+  useEffect(() => {
+    if (user.role !== "Agent technique") return;
+    if (!navigator.geolocation) {
+      setAgentLocationStatus("unavailable");
+      return;
+    }
+    setAgentLocationStatus("searching");
+    const watcher = navigator.geolocation.watchPosition(
+      (position) => {
+        setAgentPosition({ latitude: position.coords.latitude, longitude: position.coords.longitude, accuracy: position.coords.accuracy });
+        setAgentLocationStatus("active");
+      },
+      () => setAgentLocationStatus("unavailable"),
+      { enableHighAccuracy: true, maximumAge: 15_000, timeout: 20_000 },
+    );
+    return () => navigator.geolocation.clearWatch(watcher);
+  }, [user.role]);
 
   const drawingLayer = customMap.layers.find((layer) => layer.id === drawingLayerId);
 
@@ -204,6 +230,8 @@ export default function CommuneMapPage() {
         </div>
       </div>
 
+      {user.role === "Agent technique" && <div className={`agent-location-status is-${agentLocationStatus}`}><span className="agent-location-dot"/>{agentLocationStatus === "active" ? "Ma position est affichée et actualisée" : agentLocationStatus === "searching" ? "Recherche de votre position…" : "Autorisez la localisation dans les réglages du téléphone pour afficher les distances"}</div>}
+
       {user.role !== "Agent technique" && <CustomLayerManager
         layers={managedLayers}
         sections={customMap.sections}
@@ -277,6 +305,7 @@ export default function CommuneMapPage() {
       <CommuneMap
         markers={markers}
         agentMode={user.role === "Agent technique"}
+        agentPosition={user.role === "Agent technique" ? agentPosition : null}
         selectedPosition={user.role === "Agent technique" ? null : selectedPosition}
         onMapClick={user.role === "Agent technique" ? undefined : handleMapClick}
         customLayers={user.role === "Agent technique" ? [] : currentLayers}

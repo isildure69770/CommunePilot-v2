@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   CircleMarker,
@@ -9,6 +9,7 @@ import {
   Polyline,
   Popup,
   TileLayer,
+  useMap,
 } from "react-leaflet";
 
 import L from "leaflet";
@@ -49,6 +50,12 @@ interface SelectedPosition {
   location?: string;
 }
 
+interface AgentPosition {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+}
+
 interface CommuneMapProps {
   markers: CommuneMapMarker[];
 
@@ -60,6 +67,7 @@ interface CommuneMapProps {
   compactControls?: boolean;
   showTerrainProblemsInitially?: boolean;
   agentMode?: boolean;
+  agentPosition?: AgentPosition | null;
 
   selectedPosition?: SelectedPosition | null;
   customLayers?: CustomMapLayer[];
@@ -100,6 +108,27 @@ function chantierConeIcon() {
 const DEFAULT_LATITUDE = 45.7900455;
 const DEFAULT_LONGITUDE = 4.4662948;
 
+function distanceLabel(from: AgentPosition, to: { latitude: number; longitude: number }) {
+  const radians = (value: number) => value * Math.PI / 180;
+  const latitudeDelta = radians(to.latitude - from.latitude);
+  const longitudeDelta = radians(to.longitude - from.longitude);
+  const value = Math.sin(latitudeDelta / 2) ** 2 + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(longitudeDelta / 2) ** 2;
+  const meters = 6_371_000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+  return meters < 1_000 ? `${Math.round(meters)} m` : `${(meters / 1_000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km`;
+}
+
+function openItinerary(from: AgentPosition, to: { latitude: number; longitude: number }) {
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${from.latitude},${from.longitude}&destination=${to.latitude},${to.longitude}&travelmode=driving`, "_blank", "noopener,noreferrer");
+}
+
+function AgentMapFocus({ position }: { position: AgentPosition }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([position.latitude, position.longitude], Math.max(map.getZoom(), 16), { duration: .7 });
+  }, [map, position.latitude, position.longitude]);
+  return null;
+}
+
 export default function CommuneMap({
   markers,
   centerLatitude = DEFAULT_LATITUDE,
@@ -109,6 +138,7 @@ export default function CommuneMap({
   compactControls = false,
   showTerrainProblemsInitially = false,
   agentMode = false,
+  agentPosition = null,
   selectedPosition = null,
   customLayers = [],
   customSections = [],
@@ -320,6 +350,13 @@ export default function CommuneMap({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {agentMode && agentPosition && <>
+            <AgentMapFocus position={agentPosition}/>
+            <CircleMarker center={[agentPosition.latitude, agentPosition.longitude]} radius={11} pathOptions={{ color: "#ffffff", weight: 4, fillColor: "#1760c3", fillOpacity: 1 }} bubblingMouseEvents={false}>
+              <Popup><div className="map-popup-content"><strong>📍 Ma position</strong><span>Position GPS de l’agent</span>{agentPosition.accuracy && <span>Précision : environ {Math.round(agentPosition.accuracy)} m</span>}</div></Popup>
+            </CircleMarker>
+          </>}
+
           {showBoundary && (
             <CommuneBoundaryLayer />
           )}
@@ -417,12 +454,12 @@ export default function CommuneMap({
           {visibleMarkers.map(
             (mapMarker) => mapMarker.type === "signalement" ? (
               <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={terrainProblemIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover>
-                <Popup><div className="map-popup-content"><strong>⚠️ {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : {mapMarker.sourceKind === "field-alert" ? "Remontée terrain" : "Problème terrain"}</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.date&&<span>Créée le : {new Date(mapMarker.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span>}{mapMarker.description&&<p>{mapMarker.description}</p>}{!agentMode && mapMarker.sourceKind !== "field-alert" && <button className="primary-button compact-button" type="button" onClick={() => navigate(`/signalements?signalement=${mapMarker.sourceId}`)}>Ouvrir la fiche</button>}</div></Popup>
+                <Popup><div className="map-popup-content"><strong>⚠️ {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : {mapMarker.sourceKind === "field-alert" ? "Remontée terrain" : "Problème terrain"}</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.date&&<span>Créée le : {new Date(mapMarker.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</span>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}{!agentMode && mapMarker.sourceKind !== "field-alert" && <button className="primary-button compact-button" type="button" onClick={() => navigate(`/signalements?signalement=${mapMarker.sourceId}`)}>Ouvrir la fiche</button>}</div></Popup>
               </Marker>
             ) : mapMarker.type === "mission" ? (
-              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={missionAgentIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>👷 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Mission agent</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.description&&<p>{mapMarker.description}</p>}</div></Popup></Marker>
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={missionAgentIcon(mapMarker.priority)} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>👷 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Mission agent</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}</div></Popup></Marker>
             ) : mapMarker.type === "chantier" ? (
-              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={chantierConeIcon()} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>🚧 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Chantier</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{mapMarker.description&&<p>{mapMarker.description}</p>}</div></Popup></Marker>
+              <Marker key={mapMarker.id} position={[mapMarker.latitude,mapMarker.longitude]} icon={chantierConeIcon()} bubblingMouseEvents={false} riseOnHover><Popup><div className="map-popup-content"><strong>🚧 {mapMarker.title}</strong><span>📍 {mapMarker.location}</span><span>Type : Chantier</span><span>Statut : {mapMarker.status}</span><span>Priorité : {mapMarker.priority}</span>{agentPosition&&<strong className="map-agent-distance">À {distanceLabel(agentPosition, mapMarker)} de votre position</strong>}{mapMarker.description&&<p>{mapMarker.description}</p>}{agentMode&&agentPosition&&<button className="primary-button compact-button" type="button" onClick={() => openItinerary(agentPosition, mapMarker)}>Itinéraire</button>}</div></Popup></Marker>
             ) : (
               <Marker
                 key={mapMarker.id}
