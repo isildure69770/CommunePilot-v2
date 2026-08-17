@@ -362,7 +362,7 @@ export default function SignalementDetailsModal({
                 chantier
               </button>
             )}
-            {signalement.category === "Voirie" && onCreateMission && <button className="secondary-button" type="button" onClick={() => onCreateMission(signalement)}>📋 Créer une mission agent</button>}
+            {onCreateMission && <button className="secondary-button" type="button" onClick={() => onCreateMission(signalement)}>📋 Créer une mission agent</button>}
           </section>
 
           {missions.length > 0 && <section className="signalement-details-section"><h3>Missions liées</h3><div className="signalement-linked-missions">{missions.map((mission) => <article key={mission.id} className={mission.archivedAt ? "is-archived" : ""}><div><strong>{mission.title}</strong><span>{mission.status}{mission.archivedAt ? " · Archivée" : ""}</span><small>{mission.assigneeIds.length} agent{mission.assigneeIds.length > 1 ? "s" : ""} affecté{mission.assigneeIds.length > 1 ? "s" : ""}</small></div>{mission.status === "Terminée" && !mission.archivedAt && <div className="signalement-mission-actions">{onArchiveMission&&<button className="secondary-button compact-button" type="button" onClick={() => recordMissionAction(mission,"archivée")}>Archiver</button>}{onDeleteMission&&<button className="danger-button compact-button" type="button" onClick={() => recordMissionAction(mission,"supprimée")}>Effacer</button>}</div>}{mission.status !== "Terminée"&&!mission.archivedAt&&<small className="mission-validation-hint">Les actions seront disponibles après validation de la réalisation.</small>}</article>)}</div></section>}
