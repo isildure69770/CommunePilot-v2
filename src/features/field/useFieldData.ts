@@ -59,7 +59,13 @@ export function useFieldData() {
     void synchronize("missions", values).then(missionRepository.save).catch(() => undefined);
   }, []);
   const saveAlerts = useCallback((values: typeof alerts) => {
-    alertRepository.save(values);
+    try {
+      alertRepository.save(values);
+    } catch (error) {
+      if (!(error instanceof DOMException) || !["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"].includes(error.name)) throw error;
+      const lightweight = values.map((alert) => ({ ...alert, photos: alert.photos.map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? "" : photo.dataUrl })) }));
+      alertRepository.save(lightweight);
+    }
     void synchronize("alerts", values).then(alertRepository.save).catch(() => undefined);
   }, []);
   const notify = (value: Omit<LocalNotification, "id" | "createdAt" | "readBy">) => notificationRepository.save([{ ...value, id: makeId("notif"), createdAt: new Date().toISOString(), readBy: [] }, ...notificationRepository.list()]);
