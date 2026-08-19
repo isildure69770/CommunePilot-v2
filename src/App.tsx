@@ -2,6 +2,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from "react-router-dom";
 
 import MainLayout from "./layout/MainLayout";
@@ -10,70 +11,106 @@ import Dashboard from "./pages/Dashboard";
 import PlaceholderPage from "./pages/PlaceholderPage";
 
 import DossiersPage from "./features/dossiers/pages/DossiersPage";
+import DossierDetailPage from "./features/dossiers/pages/DossierDetailPage";
 import VoiriePage from "./features/voirie/pages/VoiriePage";
+import BusinessLayersPage from "./features/voirie/pages/BusinessLayersPage";
 import SignalementsPage from "./features/signalements/pages/SignalementsPage";
 import CommuneMapPage from "./features/map/pages/CommuneMapPage";
 import EquipmentDetailPage from "./features/equipments/pages/EquipmentDetailPage";
 import MailsPage from "./features/mails/pages/MailsPage";
+import { MicrosoftAuthProvider } from "./features/mails/auth/MicrosoftAuthProvider";
+import { MailSyncProvider } from "./features/mails/providers/MailSyncProvider";
+import { LocalIdentityProvider, useIdentity } from "./features/access/LocalIdentityProvider";
+import ProtectedRoute from "./features/access/ProtectedRoute";
+import UsersPage from "./features/access/UsersPage";
+import MissionsPage from "./features/field/MissionsPage";
+import TerrainPage from "./features/field/TerrainPage";
+import FieldAlertsPage from "./features/field/FieldAlertsPage";
+import NotificationsPage from "./features/field/NotificationsPage";
+import CalendarPage from "./features/calendar/pages/CalendarPage";
+import CalendarSettingsPage from "./features/calendar/pages/CalendarSettingsPage";
+import CommissionPage from "./features/commissions/pages/CommissionPage";
+import AgentContactsPage from "./features/field/AgentContactsPage";
+
+const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
+function HomeRedirect() { const { user } = useIdentity(); return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
+function ScopedLayout() {
+  const { user } = useIdentity();
+  const { pathname } = useLocation();
+  const agentPaths = ["/terrain", "/missions", "/carte", "/contacts"];
+  if (user.role === "Agent technique" && !agentPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return <Navigate to="/terrain" replace/>;
+  return <MainLayout/>;
+}
 
 export default function App() {
   return (
-    <Routes>
-      <Route element={<MainLayout />}>
+    <MicrosoftAuthProvider><MailSyncProvider><LocalIdentityProvider><Routes>
+      <Route element={<ScopedLayout />}>
         <Route
           path="/dashboard"
-          element={<Dashboard />}
+          element={protect("dashboard", <Dashboard />)}
         />
 
         <Route
           path="/dossiers"
-          element={<DossiersPage />}
+          element={protect("dossiers", <DossiersPage />)}
+        />
+
+        <Route
+          path="/dossiers/:id"
+          element={protect("dossiers", <DossierDetailPage />)}
         />
 
         <Route
           path="/voirie"
-          element={<VoiriePage />}
+          element={protect("equipements", <CommissionPage commissionId="voirie" />)}
         />
+        <Route path="/voirie/chantiers" element={protect("equipements", <VoiriePage />)} />
+        <Route path="/voirie/couches-metier" element={protect("carte", <BusinessLayersPage />)} />
 
         <Route
           path="/signalements"
-          element={<SignalementsPage />}
+          element={protect("signalements", <SignalementsPage />)}
         />
 
         <Route
           path="/carte"
-          element={<CommuneMapPage />}
+          element={protect("carte", <CommuneMapPage />)}
         />
 
         <Route
           path="/equipments/:id"
-          element={<EquipmentDetailPage />}
+          element={protect("equipements", <EquipmentDetailPage />)}
         />
 
         <Route
           path="/conseil-municipal"
-          element={
+          element={protect("documents",
             <PlaceholderPage
               title="Conseil municipal"
               description="Le module Conseil municipal sera développé ici."
-            />
-          }
+            />)}
         />
 
         <Route
           path="/batiments"
-          element={
-            <PlaceholderPage
-              title="Bâtiments"
-              description="Le module Bâtiments sera développé ici."
-            />
-          }
+          element={protect("dashboard", <CommissionPage commissionId="batiments" />)}
         />
+        <Route path="/gestion-des-salles" element={protect("dashboard", <CommissionPage commissionId="salles" />)} />
+        <Route path="/communication" element={protect("dashboard", <CommissionPage commissionId="communication" />)} />
 
         <Route
           path="/mails"
-          element={<MailsPage />}
+          element={protect("mails", <MailsPage />)}
         />
+
+        <Route path="/missions" element={protect("missions", <MissionsPage />)} />
+        <Route path="/terrain" element={protect("missions", <TerrainPage />)} />
+        <Route path="/contacts" element={<AgentContactsPage/>} />
+        <Route path="/alertes-terrain" element={protect("signalements", <FieldAlertsPage />, "update")} />
+        <Route path="/utilisateurs" element={protect("utilisateurs", <UsersPage />)} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/acces-refuse" element={<PlaceholderPage title="Accès refusé" description="Votre rôle local ne permet pas d’accéder à cette rubrique." />} />
 
         <Route
           path="/documents"
@@ -87,44 +124,28 @@ export default function App() {
 
         <Route
           path="/calendrier"
-          element={
-            <PlaceholderPage
-              title="Calendrier"
-              description="Le module Calendrier sera développé ici."
-            />
-          }
+          element={protect("calendrier", <CalendarPage />)}
         />
 
         <Route
           path="/parametres"
-          element={
-            <PlaceholderPage
-              title="Paramètres"
-              description="Configuration générale de CommunePilot."
-            />
-          }
+          element={<CalendarSettingsPage />}
         />
       </Route>
 
       <Route
         path="/"
         element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
+          <HomeRedirect />
         }
       />
 
       <Route
         path="*"
         element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
+          <HomeRedirect />
         }
       />
-    </Routes>
+    </Routes></LocalIdentityProvider></MailSyncProvider></MicrosoftAuthProvider>
   );
 }

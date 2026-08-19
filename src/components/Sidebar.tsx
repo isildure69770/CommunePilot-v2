@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { navigationItems } from "../navigation/navigationItems";
+import { useIdentity } from "../features/access/LocalIdentityProvider";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { user, can } = useIdentity();
+  const agentPaths = new Set(["/calendrier", "/carte", "/parametres"]);
   return (
     <>
       <button
@@ -30,6 +33,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
           {navigationItems.map((item) => {
+            if (user.role === "Agent technique" && !agentPaths.has(item.path)) return null;
+            if ("domain" in item && !can(item.domain)) return null;
             const Icon = item.icon;
             return (
               <NavLink

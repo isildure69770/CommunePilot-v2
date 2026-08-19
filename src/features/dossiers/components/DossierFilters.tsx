@@ -9,14 +9,12 @@ import type {
 
 interface DossierFiltersProps {
   filters: Filters;
-  categories: string[];
   onChange: (filters: Filters) => void;
   onReset: () => void;
 }
 
 function DossierFilters({
   filters,
-  categories,
   onChange,
   onReset,
 }: DossierFiltersProps) {
@@ -73,23 +71,6 @@ function DossierFilters({
         <option value="Normale">Normale</option>
         <option value="Haute">Haute</option>
         <option value="Urgente">Urgente</option>
-      </select>
-
-      <select
-        value={filters.category}
-        onChange={(event) =>
-          updateFilter("category", event.target.value)
-        }
-      >
-        <option value="Toutes">
-          Toutes les catégories
-        </option>
-
-        {categories.map((category) => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
       </select>
 
       <button

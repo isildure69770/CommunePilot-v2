@@ -29,6 +29,7 @@ interface SignalementFormProps {
   signalement?: Signalement | null;
 
   initialPosition?: InitialPosition | null;
+  initialCategory?: SignalementCategory;
 
   onClose: () => void;
 
@@ -57,6 +58,7 @@ export default function SignalementForm({
   isOpen,
   signalement,
   initialPosition = null,
+  initialCategory = "Voirie",
   onClose,
   onSubmit,
 }: SignalementFormProps) {
@@ -85,6 +87,7 @@ export default function SignalementForm({
     } else {
   setForm({
   ...emptyForm,
+  category: initialCategory,
 
   latitude:
     initialPosition?.latitude ??
@@ -102,6 +105,7 @@ export default function SignalementForm({
   signalement,
   isOpen,
   initialPosition,
+  initialCategory,
 ]);
 
   if (!isOpen) {

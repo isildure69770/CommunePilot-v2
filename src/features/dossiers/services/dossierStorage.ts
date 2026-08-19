@@ -10,7 +10,9 @@ export function loadDossiers(): Dossier[] | null {
   }
 
   try {
-    return JSON.parse(stored) as Dossier[];
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return null;
+    return parsed.map((dossier) => ({ ...dossier, documents: Array.isArray(dossier.documents) ? dossier.documents : [] })) as Dossier[];
   } catch {
     return null;
   }

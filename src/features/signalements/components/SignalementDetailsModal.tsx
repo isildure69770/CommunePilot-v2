@@ -11,6 +11,7 @@ import SignalementPhotos from "./SignalementPhotos";
 import type {
   Signalement,
 } from "../types/signalement";
+import type { Mission } from "../../field/types";
 
 import type {
   SignalementDetails,
@@ -33,6 +34,10 @@ interface SignalementDetailsModalProps {
   onCreateChantier: (
     signalement: Signalement,
   ) => void;
+  onCreateMission?: (signalement: Signalement) => void;
+  missions?: Mission[];
+  onArchiveMission?: (mission: Mission) => void;
+  onDeleteMission?: (mission: Mission) => void;
 }
 
 function formatDateTime(
@@ -57,6 +62,10 @@ export default function SignalementDetailsModal({
   onClose,
   onEdit,
   onCreateChantier,
+  onCreateMission,
+  missions = [],
+  onArchiveMission,
+  onDeleteMission,
 }: SignalementDetailsModalProps) {
   const [
     details,
@@ -117,6 +126,13 @@ export default function SignalementDetailsModal({
     saveSignalementDetails(
       nextDetails,
     );
+  }
+
+  function recordMissionAction(mission: Mission, action: "archivée" | "supprimée") {
+    if (!details) return;
+    if (!window.confirm(`Confirmer que la mission « ${mission.title} » est réalisée et peut être ${action} ?`)) return;
+    if (action === "archivée") onArchiveMission?.(mission); else onDeleteMission?.(mission);
+    updateDetails({ ...details, history: [{ id: Date.now(), action: `Mission « ${mission.title} » ${action} après validation de sa réalisation`, createdAt: new Date().toISOString() }, ...details.history] });
   }
 
   return (
@@ -323,10 +339,7 @@ export default function SignalementDetailsModal({
               </h3>
 
               <p>
-                Transformez ce
-                signalement
-                directement en
-                chantier Voirie.
+                Créez un chantier Voirie ou affectez directement une mission à un agent.
               </p>
             </div>
 
@@ -349,7 +362,10 @@ export default function SignalementDetailsModal({
                 chantier
               </button>
             )}
+            {onCreateMission && <button className="secondary-button" type="button" onClick={() => onCreateMission(signalement)}>📋 Créer une mission agent</button>}
           </section>
+
+          {missions.length > 0 && <section className="signalement-details-section"><h3>Missions liées</h3><div className="signalement-linked-missions">{missions.map((mission) => <article key={mission.id} className={mission.archivedAt ? "is-archived" : ""}><div><strong>{mission.title}</strong><span>{mission.status}{mission.archivedAt ? " · Archivée" : ""}</span><small>{mission.assigneeIds.length} agent{mission.assigneeIds.length > 1 ? "s" : ""} affecté{mission.assigneeIds.length > 1 ? "s" : ""}</small></div>{mission.status === "Terminée" && !mission.archivedAt && <div className="signalement-mission-actions">{onArchiveMission&&<button className="secondary-button compact-button" type="button" onClick={() => recordMissionAction(mission,"archivée")}>Archiver</button>}{onDeleteMission&&<button className="danger-button compact-button" type="button" onClick={() => recordMissionAction(mission,"supprimée")}>Effacer</button>}</div>}{mission.status !== "Terminée"&&!mission.archivedAt&&<small className="mission-validation-hint">Les actions seront disponibles après validation de la réalisation.</small>}</article>)}</div></section>}
 
           <SignalementPhotos
             details={details}

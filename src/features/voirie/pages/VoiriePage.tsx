@@ -1,11 +1,23 @@
 import { useState } from "react";
+import { FolderOpen, Layers3 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ChantierCard } from "../components/ChantierCard";
 import ChantierFilters from "../components/ChantierFilters";
 import ChantierForm from "../components/ChantierForm";
 import { useChantiers } from "../hooks/useChantiers";
 import type { Chantier } from "../types/chantier";
+import RoadEquipmentManager from "../../road-equipment/components/RoadEquipmentManager";
+import RoadEquipmentIndicators from "../../road-equipment/components/RoadEquipmentIndicators";
+import { useDossiers } from "../../dossiers/hooks/useDossiers";
+import { normalizeDossierCategory } from "../../dossiers/dossierCategories";
+import { useIdentity } from "../../access/LocalIdentityProvider";
 
 export default function VoiriePage() {
+  const { dossiers } = useDossiers();
+  const { can } = useIdentity();
+  const voirieDossiers = dossiers.filter(
+    (dossier) => normalizeDossierCategory(dossier.category).toLocaleLowerCase("fr") === "voirie",
+  );
   const {
     filteredChantiers,
     filters,
@@ -70,35 +82,42 @@ export default function VoiriePage() {
           </p>
         </div>
 
-        <button
+        <div className="page-heading-actions"><Link className="secondary-button" to="/voirie/couches-metier"><Layers3 size={18}/> Couches métier</Link><button
           className="primary-button"
           type="button"
           onClick={openCreateForm}
         >
           + Nouveau chantier
-        </button>
+        </button></div>
       </div>
 
-      <div className="voirie-statistics">
-        <article>
-          <span>Total</span>
-          <strong>{statistics.total}</strong>
-        </article>
+      <RoadEquipmentIndicators />
 
-        <article>
-          <span>Planifiés</span>
-          <strong>{statistics.planned}</strong>
-        </article>
+      <section className="voirie-dossiers" aria-labelledby="voirie-dossiers-title">
+        <div className="section-heading voirie-dossiers-heading">
+          <div>
+            <span className="eyebrow">Dossiers classés</span>
+            <h3 id="voirie-dossiers-title">Dossiers Voirie</h3>
+          </div>
+          {can("dossiers", "view") && <Link className="secondary-button compact-button" to="/dossiers"><FolderOpen /> Accéder aux dossiers</Link>}
+        </div>
+        {voirieDossiers.length > 0 ? (
+          <div className="voirie-dossiers-grid">
+            {voirieDossiers.map((dossier) => (
+              <Link className="voirie-dossier-card" to={`/dossiers/${dossier.id}`} key={dossier.id}>
+                <span className="voirie-dossier-icon"><FolderOpen /></span>
+                <span><strong>{dossier.title}</strong><small>{dossier.status} · {dossier.documents?.length ?? 0} document{(dossier.documents?.length ?? 0) > 1 ? "s" : ""}</small></span>
+              </Link>
+            ))}
+          </div>
+        ) : <div className="voirie-dossiers-empty"><FolderOpen /><span><strong>Aucun dossier Voirie</strong><small>Les dossiers classés « Voirie » apparaîtront automatiquement ici.</small></span></div>}
+      </section>
 
-        <article>
-          <span>En cours</span>
-          <strong>{statistics.inProgress}</strong>
-        </article>
-
-        <article>
-          <span>Urgents</span>
-          <strong>{statistics.urgent}</strong>
-        </article>
+      <div className="voirie-statistics chantier-statistics" aria-label="Indicateurs des chantiers">
+        <article><span>Total chantiers</span><strong>{statistics.total}</strong></article>
+        <article><span>Planifiés</span><strong>{statistics.planned}</strong></article>
+        <article><span>En cours</span><strong>{statistics.inProgress}</strong></article>
+        <article><span>Urgents</span><strong>{statistics.urgent}</strong></article>
       </div>
 
       <ChantierFilters
@@ -139,6 +158,8 @@ export default function VoiriePage() {
         onClose={closeForm}
         onSubmit={handleSubmit}
       />
+
+      <RoadEquipmentManager />
     </section>
   );
 }

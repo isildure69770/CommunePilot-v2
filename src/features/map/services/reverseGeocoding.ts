@@ -1,8 +1,11 @@
+import { formatMontrottierAddress, isMontrottierAddress } from "./montrottier";
+
 export interface ReverseGeocodingResult {
   road: string;
   city: string;
   postcode: string;
   displayName: string;
+  isMontrottier: boolean;
 }
 
 export async function reverseGeocode(
@@ -50,8 +53,8 @@ export async function reverseGeocode(
       road,
       city,
       postcode,
-      displayName:
-        data.display_name || "",
+      displayName: formatMontrottierAddress(address) || data.display_name || "",
+      isMontrottier: isMontrottierAddress(address),
     };
   } catch {
     return null;

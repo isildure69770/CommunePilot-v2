@@ -1,3 +1,5 @@
+import { FolderOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Dossier } from "../types/dossier";
 
 interface DossierCardProps {
@@ -25,7 +27,18 @@ export default function DossierCard({
         <strong>Statut :</strong> {dossier.status}
       </p>
 
+      <p>
+        <strong>Documents :</strong> {dossier.documents?.length ?? 0}
+      </p>
+
       <div className="dossier-actions">
+        <Link
+          className="primary-button"
+          to={`/dossiers/${dossier.id}`}
+        >
+          <FolderOpen size={16} /> Ouvrir
+        </Link>
+
         <button
           className="secondary-button"
           type="button"

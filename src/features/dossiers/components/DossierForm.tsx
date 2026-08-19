@@ -4,6 +4,7 @@ import type {
   DossierPriority,
   DossierStatus,
 } from "../types/dossier";
+import { DOSSIER_CATEGORIES } from "../dossierCategories";
 
 type DossierFormValue = Omit<
   Dossier,
@@ -15,12 +16,13 @@ interface DossierFormProps {
   dossier?: Dossier | null;
   onClose: () => void;
   onSubmit: (value: DossierFormValue) => void;
+  initialCategory?: string;
 }
 
 const emptyForm: DossierFormValue = {
   title: "",
   description: "",
-  category: "Voirie",
+  category: "",
   manager: "",
   status: "À traiter",
   priority: "Normale",
@@ -32,6 +34,7 @@ export default function DossierForm({
   dossier,
   onClose,
   onSubmit,
+  initialCategory = "",
 }: DossierFormProps) {
   const [form, setForm] =
     useState<DossierFormValue>(emptyForm);
@@ -48,9 +51,9 @@ export default function DossierForm({
         deadline: dossier.deadline.slice(0, 10),
       });
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, category: initialCategory });
     }
-  }, [dossier, isOpen]);
+  }, [dossier, isOpen, initialCategory]);
 
   if (!isOpen) {
     return null;
@@ -155,12 +158,13 @@ export default function DossierForm({
                 updateField("category", event.target.value)
               }
             >
-              <option>Voirie</option>
-              <option>Bâtiments</option>
-              <option>Conseil municipal</option>
-              <option>Communication</option>
-              <option>Gestion des salles</option>
-              <option>Finances</option>
+              <option value="">Sans catégorie (reste dans Dossiers)</option>
+              {DOSSIER_CATEGORIES.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+              {form.category && !DOSSIER_CATEGORIES.includes(form.category as (typeof DOSSIER_CATEGORIES)[number]) && (
+                <option value={form.category}>{form.category} (catégorie existante)</option>
+              )}
             </select>
           </label>
 

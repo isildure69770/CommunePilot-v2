@@ -4,6 +4,9 @@ import {
   loadDossiers,
   saveDossiers,
 } from "../services/dossierStorage";
+import { isUncategorizedDossier } from "../dossierCategories";
+import { useIdentity } from "../../access/LocalIdentityProvider";
+import { dossierActivityRepository } from "../services/dossierActivityRepository";
 
 import type {
   Dossier,
@@ -26,6 +29,7 @@ const defaultFilters: DossierFilters = {
 };
 
 export function useDossiers() {
+  const { user } = useIdentity();
   const [dossiers, setDossiers] = useState<Dossier[]>(
     () => loadDossiers() ?? initialDossiers,
   );
@@ -37,26 +41,19 @@ export function useDossiers() {
     saveDossiers(dossiers);
   }, [dossiers]);
 
-  const categories = useMemo(() => {
-    return Array.from(
-      new Set(
-        dossiers.map((dossier) => dossier.category),
-      ),
-    ).sort();
-  }, [dossiers]);
-
   const filteredDossiers = useMemo(() => {
     const normalizedSearch = filters.search
       .trim()
       .toLowerCase();
 
     return dossiers.filter((dossier) => {
+      if (!isUncategorizedDossier(dossier)) return false;
+
       const matchesSearch =
         !normalizedSearch ||
         [
           dossier.title,
           dossier.description,
-          dossier.category,
           dossier.manager,
           dossier.status,
           dossier.priority,
@@ -74,15 +71,10 @@ export function useDossiers() {
         filters.priority === "Toutes" ||
         dossier.priority === filters.priority;
 
-      const matchesCategory =
-        filters.category === "Toutes" ||
-        dossier.category === filters.category;
-
       return (
         matchesSearch &&
         matchesStatus &&
-        matchesPriority &&
-        matchesCategory
+        matchesPriority
       );
     });
   }, [dossiers, filters]);
@@ -106,19 +98,23 @@ export function useDossiers() {
       newDossier,
       ...currentDossiers,
     ]);
+    dossierActivityRepository.add({ dossierId: newDossier.id, type: "dossier", action: "created", label: `${user.firstName} a créé le dossier`, authorId: user.id, timestamp: now });
   }
 
   function updateDossier(updatedDossier: Dossier) {
+    const previous = dossiers.find((dossier) => dossier.id === updatedDossier.id);
+    const now = new Date().toISOString();
     setDossiers((currentDossiers) =>
       currentDossiers.map((dossier) =>
         dossier.id === updatedDossier.id
           ? {
               ...updatedDossier,
-              updatedAt: new Date().toISOString(),
+              updatedAt: now,
             }
           : dossier,
       ),
     );
+    if (previous) dossierActivityRepository.add({ dossierId: updatedDossier.id, type: "dossier", action: "updated", label: `${user.firstName} a modifié le dossier`, authorId: user.id, timestamp: now });
   }
 
   function deleteDossier(id: number) {
@@ -137,7 +133,6 @@ export function useDossiers() {
     dossiers,
     filteredDossiers,
     filters,
-    categories,
     setFilters,
     addDossier,
     updateDossier,

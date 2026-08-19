@@ -63,6 +63,10 @@ export default function SignalementFilters({
         <option value="Classé">Classé</option>
       </select>
 
+      <select value={filters.category} onChange={(event) => updateFilter("category", event.target.value)}>
+        <option value="Toutes">Toutes les catégories</option><option>Voirie</option><option value="Bâtiments">Bâtiments</option><option>Espaces verts</option><option>Éclairage public</option><option>Eau</option><option>Déchets</option><option>Sécurité</option><option>Mobilier urbain</option><option>Divers</option>
+      </select>
+
       <select
         value={filters.priority}
         onChange={(event) =>

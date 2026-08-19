@@ -22,6 +22,7 @@ interface ChantierFormProps {
   chantier?: Chantier | null;
   onClose: () => void;
   onSubmit: (value: ChantierFormValue) => void;
+  initialPosition?: { latitude: number; longitude: number; location?: string } | null;
 }
 
 const DEFAULT_LATITUDE = 45.790833;
@@ -55,6 +56,7 @@ export default function ChantierForm({
   chantier,
   onClose,
   onSubmit,
+  initialPosition = null,
 }: ChantierFormProps) {
   const [form, setForm] =
     useState<ChantierFormValue>(emptyForm);
@@ -90,9 +92,9 @@ export default function ChantierForm({
         progress: chantier.progress,
       });
     } else {
-      setForm(emptyForm);
+      setForm({ ...emptyForm, latitude: initialPosition?.latitude ?? DEFAULT_LATITUDE, longitude: initialPosition?.longitude ?? DEFAULT_LONGITUDE, location: initialPosition?.location ?? "" });
     }
-  }, [chantier, isOpen]);
+  }, [chantier, isOpen, initialPosition]);
 
   if (!isOpen) {
     return null;
