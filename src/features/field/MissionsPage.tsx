@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Archive, ClipboardList, MapPin, Pencil, Plus, RotateCcw, X } from "lucide-react";
 import { useIdentity } from "../access/LocalIdentityProvider";
@@ -9,6 +9,7 @@ import type { Dossier } from "../dossiers/types/dossier";
 import MapClickSelector from "../map/components/MapClickSelector";
 import { searchAddresses, type AddressSuggestion } from "../map/services/addressSearch";
 import { reverseGeocode } from "../map/services/reverseGeocoding";
+import { isInMontrottier } from "../map/services/montrottier";
 import { filesToAttachments } from "./fileUtils";
 import { makeId } from "./repository";
 import type { Mission, MissionPriority, MissionStatus } from "./types";
@@ -85,6 +86,7 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
   const [fileError, setFileError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
+  const mapSelectionRequest = useRef(0);
   useEffect(() => {
     if (!addressFocused || form.address.trim().length < 3) { setSuggestions([]); return; }
     const controller = new AbortController();
@@ -92,14 +94,26 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [form.address, addressFocused]);
   const update = <K extends keyof MissionFormValue>(key: K, value: MissionFormValue[K]) => setForm((current) => ({ ...current, [key]: value }));
-  const selectSuggestion = (suggestion: AddressSuggestion) => { setForm((current) => ({ ...current, address: suggestion.label, latitude: suggestion.latitude, longitude: suggestion.longitude })); setSuggestions([]); setAddressFocused(false); setMapOpen(true); setAddressStatus("Adresse et point cartographique enregistrés."); };
-  const selectOnMap = async (latitude: number, longitude: number) => { setForm((current) => ({ ...current, latitude, longitude })); setAddressStatus("Recherche de l’adresse…"); const result = await reverseGeocode(latitude, longitude); const address = result?.displayName.trim(); setForm((current) => ({ ...current, latitude, longitude, address: address || current.address })); setAddressStatus(address ? "Adresse détectée automatiquement." : "Coordonnées enregistrées ; adresse introuvable."); };
+  const selectSuggestion = (suggestion: AddressSuggestion) => { mapSelectionRequest.current += 1; setForm((current) => ({ ...current, address: suggestion.label, latitude: suggestion.latitude, longitude: suggestion.longitude })); setSuggestions([]); setAddressFocused(false); setMapOpen(true); setAddressStatus("Adresse et point cartographique enregistrés."); };
+  const selectOnMap = async (latitude: number, longitude: number) => {
+    const request = ++mapSelectionRequest.current;
+    setAddressStatus("Vérification de l’emplacement…");
+    const inside = await isInMontrottier(latitude, longitude);
+    if (request !== mapSelectionRequest.current) return;
+    if (inside === false) { setAddressStatus("Emplacement refusé : les missions doivent être localisées à Montrottier. La dernière sélection valide est conservée."); return; }
+    const result = await reverseGeocode(latitude, longitude);
+    if (request !== mapSelectionRequest.current) return;
+    if ((result && !result.isMontrottier) || (inside === null && !result?.isMontrottier)) { setAddressStatus("Emplacement non vérifiable : choisissez un point situé à Montrottier. La dernière sélection valide est conservée."); return; }
+    const address = result?.displayName.trim() || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}, Montrottier`;
+    setForm((current) => ({ ...current, latitude, longitude, address }));
+    setAddressStatus(result ? "Adresse détectée automatiquement." : "Point enregistré à Montrottier ; adresse exacte introuvable.");
+  };
   const addFiles = async (files: FileList | null) => { setFileError(""); try { const attachments = await filesToAttachments(files, "auto"); update("attachments", [...form.attachments, ...attachments]); } catch (error) { setFileError(error instanceof Error ? error.message : "La photo n’a pas pu être préparée."); } };
   const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!form.assigneeIds.length) { setSaveError("Choisissez au moins un agent technique avant d’enregistrer."); return; } setSaveError(""); setSaving(true); try { await onSubmit({ ...form, title: form.title.trim(), description: form.description.trim(), address: form.address.trim() }); } catch (error) { setSaveError(error instanceof Error ? error.message : "La mission n’a pas pu être enregistrée. Les champs saisis sont conservés."); } finally { setSaving(false); } };
   return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal mission-modal calendar-event-modal" role="dialog" aria-modal="true" aria-label={mission ? "Modifier la mission" : "Créer une mission"} onMouseDown={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">Planification terrain</span><h3>{mission ? "Modifier la mission" : "Nouvelle mission"}</h3></div><button className="icon-button" type="button" onClick={onClose} aria-label="Fermer"><X/></button></div><form className="calendar-event-form mission-event-form" onSubmit={submit}>
     <label className="form-wide">Titre<input autoFocus required value={form.title} onChange={(event) => update("title", event.target.value)}/></label>
     <label className="form-wide">Consigne<textarea required rows={3} value={form.description} onChange={(event) => update("description", event.target.value)}/></label>
-    <div className="form-wide mission-address-field"><label>Adresse<input value={form.address} autoComplete="off" onFocus={() => setAddressFocused(true)} onBlur={() => window.setTimeout(() => setAddressFocused(false), 150)} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value, latitude: undefined, longitude: undefined }))} placeholder="Commencez à saisir une adresse…"/></label>{addressFocused && form.address.trim().length < 3 && <small className="address-help">Saisissez au moins 3 caractères pour afficher des propositions.</small>}{suggestions.length > 0 && <div className="address-suggestions" role="listbox">{suggestions.map((suggestion) => <button type="button" role="option" key={suggestion.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(suggestion)}><MapPin/>{suggestion.label}</button>)}</div>}<button className="secondary-button map-select-button" type="button" onClick={() => setMapOpen((current) => !current)}><MapPin/>{mapOpen ? "Masquer la carte" : "Sélectionner sur la carte"}</button>{addressStatus && <small className="address-status">{addressStatus}</small>}</div>
+    <div className="form-wide mission-address-field"><label>Adresse<input value={form.address} autoComplete="off" onFocus={() => setAddressFocused(true)} onBlur={() => window.setTimeout(() => setAddressFocused(false), 150)} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value, latitude: undefined, longitude: undefined }))} placeholder="N° et voie à Montrottier…"/></label>{addressFocused && form.address.trim().length < 3 && <small className="address-help">Saisissez au moins 3 caractères. Seules les adresses de Montrottier sont proposées.</small>}{suggestions.length > 0 && <div className="address-suggestions" role="listbox">{suggestions.map((suggestion) => <button type="button" role="option" key={suggestion.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(suggestion)}><MapPin/><span>{suggestion.label}</span></button>)}</div>}<button className="secondary-button map-select-button" type="button" onClick={() => setMapOpen((current) => !current)}><MapPin/>{mapOpen ? "Masquer la carte" : "Sélectionner sur la carte"}</button>{addressStatus && <small className={`address-status${addressStatus.includes("refusé") || addressStatus.includes("non vérifiable") ? " is-error" : ""}`} role="status">{addressStatus}</small>}</div>
     {mapOpen && <div className="form-wide mission-map"><MapClickSelector latitude={form.latitude ?? DEFAULT_LATITUDE} longitude={form.longitude ?? DEFAULT_LONGITUDE} title={form.title || "Emplacement de la mission"} height={320} onChange={(latitude, longitude) => void selectOnMap(latitude, longitude)}/></div>}
     <label>Priorité<select value={form.priority} onChange={(event) => update("priority", event.target.value as MissionPriority)}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label>
     <label>Statut<select value={form.status} onChange={(event) => update("status", event.target.value as MissionStatus)}><option>À faire</option><option>Prise en compte</option><option>En cours</option><option>Terminée</option><option>Annulée</option></select></label>
