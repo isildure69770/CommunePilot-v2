@@ -1,16 +1,12 @@
 import { app } from "@azure/functions";
 import { BlobServiceClient } from "@azure/storage-blob";
+import { clientPrincipal, hasRole, isAuthenticated } from "../auth.js";
 
 const containerName = process.env.FIELD_FILES_CONTAINER_NAME || "field-files";
 const roles = new Set(["maire", "adjoint", "conseiller", "agent-administratif", "agent-technique"]);
 const maximumBytes = 15 * 1024 * 1024;
 
-function principal(request) {
-  const encoded = request.headers.get("x-ms-client-principal");
-  if (!encoded) return null;
-  try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
-}
-function mayAccess(user) { return user?.userRoles?.some((role) => roles.has(role)); }
+function mayAccess(user) { return hasRole(user, roles); }
 function safeId(value) { return typeof value === "string" && /^[a-zA-Z0-9._-]{1,180}$/.test(value) ? value : null; }
 
 async function container() {
@@ -24,8 +20,8 @@ async function container() {
 app.http("field-files-upload", {
   methods: ["POST"], authLevel: "anonymous", route: "field-files",
   handler: async (request, context) => {
-    const user = principal(request);
-    if (!user?.userRoles?.includes("authenticated")) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
+    const user = clientPrincipal(request);
+    if (!isAuthenticated(user)) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
     if (!mayAccess(user)) return { status: 403, jsonBody: { error: "Rôle CommunePilot requis." } };
     try {
       const body = await request.json();
@@ -43,8 +39,8 @@ app.http("field-files-upload", {
 app.http("field-files-download", {
   methods: ["GET"], authLevel: "anonymous", route: "field-files/{id}",
   handler: async (request, context) => {
-    const user = principal(request);
-    if (!user?.userRoles?.includes("authenticated")) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
+    const user = clientPrincipal(request);
+    if (!isAuthenticated(user)) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
     if (!mayAccess(user)) return { status: 403, jsonBody: { error: "Rôle CommunePilot requis." } };
     try {
       const id = safeId(request.params.id);

@@ -1,16 +1,12 @@
 import { app } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
+import { clientPrincipal, hasRole, isAuthenticated } from "../auth.js";
 
 const tableName = process.env.FIELD_ALERTS_TABLE_NAME || "FieldAlerts";
 const createRoles = new Set(["maire", "adjoint", "conseiller", "agent-administratif", "agent-technique"]);
 const updateRoles = new Set(["maire", "adjoint", "conseiller", "agent-administratif"]);
 
-function principal(request) {
-  const encoded = request.headers.get("x-ms-client-principal");
-  if (!encoded) return null;
-  try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
-}
-function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
+function may(user, allowed) { return hasRole(user, allowed); }
 function cleanPhoto(photo) { const { dataUrl, thumbnailDataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "", thumbnailDataUrl: typeof thumbnailDataUrl === "string" && thumbnailDataUrl.startsWith("/api/field-files/") ? thumbnailDataUrl : undefined }; }
 function cleanAlert(alert) { return { ...alert, photos: Array.isArray(alert.photos) ? alert.photos.map(cleanPhoto) : [] }; }
 function entityToAlert(entity) { return JSON.parse(entity.payload); }
@@ -31,8 +27,8 @@ async function list(client) {
 app.http("field-alerts", {
   methods: ["GET", "PUT"], authLevel: "anonymous", route: "field-alerts",
   handler: async (request, context) => {
-    const user = principal(request);
-    if (!user?.userRoles?.includes("authenticated")) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
+    const user = clientPrincipal(request);
+    if (!isAuthenticated(user)) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
     if (!may(user, createRoles)) return { status: 403, jsonBody: { error: "Rôle CommunePilot requis." } };
     try {
       const client = await table();

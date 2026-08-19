@@ -4,9 +4,16 @@ import type { FieldAlert, FileAttachment, LocalNotification, Mission } from "./t
 
 type RemoteCollection = "missions" | "alerts";
 
+const azureRequest: typeof fetch = (input, init = {}) => fetch(input, { ...init, credentials: "same-origin" });
+
+async function apiError(response: Response, fallback: string) {
+  const details = await response.json().catch(() => null) as { error?: string } | null;
+  return new Error(details?.error || `${fallback} (${response.status}).`);
+}
+
 async function uploadAttachment(attachment: FileAttachment) {
   if (!attachment.dataUrl.startsWith("data:")) return attachment;
-  const response = await fetch("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attachment) });
+  const response = await azureRequest("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attachment) });
   if (!response.ok) {
     const details = await response.json().catch(() => null) as { error?: string } | null;
     throw new Error(details?.error || `Envoi de « ${attachment.name} » impossible (${response.status}).`);
@@ -14,7 +21,7 @@ async function uploadAttachment(attachment: FileAttachment) {
   const result = await response.json() as { dataUrl: string };
   let thumbnailDataUrl = attachment.thumbnailDataUrl;
   if (thumbnailDataUrl?.startsWith("data:")) {
-    const thumbnailResponse = await fetch("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...attachment, id: `${attachment.id}-thumb`, name: `aperçu-${attachment.name}`, dataUrl: thumbnailDataUrl }) });
+    const thumbnailResponse = await azureRequest("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...attachment, id: `${attachment.id}-thumb`, name: `aperçu-${attachment.name}`, dataUrl: thumbnailDataUrl }) });
     if (!thumbnailResponse.ok) throw new Error(`Création de l’aperçu de « ${attachment.name} » impossible.`);
     thumbnailDataUrl = ((await thumbnailResponse.json()) as { dataUrl: string }).dataUrl;
   }
@@ -42,12 +49,12 @@ function latest<T extends { id: string; updatedAt?: string; createdAt: string }>
 async function synchronize<T extends { id: string; updatedAt?: string; createdAt: string }>(collection: RemoteCollection, local: T[]) {
   const endpoint = collection === "alerts" ? "field-alerts" : collection;
   const uploaded = await uploadFiles(collection, local);
-  const response = await fetch(`/api/${endpoint}`);
-  if (!response.ok) throw new Error(`Synchronisation ${collection} indisponible (${response.status}).`);
+  const response = await azureRequest(`/api/${endpoint}`);
+  if (!response.ok) throw await apiError(response, `Synchronisation ${collection} indisponible`);
   const remote = (await response.json() as Record<RemoteCollection, T[]>)[collection] ?? [];
   const merged = latest(uploaded, remote);
-  const saved = await fetch(`/api/${endpoint}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [collection]: merged }) });
-  if (!saved.ok) throw new Error(`Enregistrement ${collection} impossible (${saved.status}).`);
+  const saved = await azureRequest(`/api/${endpoint}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [collection]: merged }) });
+  if (!saved.ok) throw await apiError(saved, `Enregistrement ${collection} impossible`);
   return (await saved.json() as Record<RemoteCollection, T[]>)[collection] ?? merged;
 }
 

@@ -1,17 +1,13 @@
 import { app } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
+import { clientPrincipal, hasRole, isAuthenticated } from "../auth.js";
 
 const tableName = process.env.MISSIONS_TABLE_NAME || "Missions";
 const createRoles = new Set(["maire", "adjoint", "agent-administratif", "agent-technique"]);
 const updateRoles = new Set(["maire", "adjoint", "agent-administratif", "agent-technique"]);
 const viewRoles = new Set([...createRoles, "conseiller"]);
 
-function principal(request) {
-  const encoded = request.headers.get("x-ms-client-principal");
-  if (!encoded) return null;
-  try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
-}
-function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
+function may(user, allowed) { return hasRole(user, allowed); }
 function cleanAttachment(attachment) { const { dataUrl, thumbnailDataUrl, ...metadata } = attachment ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "", thumbnailDataUrl: typeof thumbnailDataUrl === "string" && thumbnailDataUrl.startsWith("/api/field-files/") ? thumbnailDataUrl : undefined }; }
 function cleanMission(mission) {
   return { ...mission, attachments: Array.isArray(mission.attachments) ? mission.attachments.map(cleanAttachment) : [], reports: Array.isArray(mission.reports) ? mission.reports.map((report) => ({ ...report, photos: Array.isArray(report.photos) ? report.photos.map(cleanAttachment) : [] })) : [], problems: Array.isArray(mission.problems) ? mission.problems.map((problem) => ({ ...problem, photos: Array.isArray(problem.photos) ? problem.photos.map(cleanAttachment) : [] })) : [] };
@@ -34,8 +30,8 @@ async function list(client) {
 app.http("missions", {
   methods: ["GET", "PUT"], authLevel: "anonymous", route: "missions",
   handler: async (request, context) => {
-    const user = principal(request);
-    if (!user?.userRoles?.includes("authenticated")) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
+    const user = clientPrincipal(request);
+    if (!isAuthenticated(user)) return { status: 401, jsonBody: { error: "Authentification Azure requise." } };
     if (!may(user, viewRoles)) return { status: 403, jsonBody: { error: "Rôle CommunePilot requis." } };
     try {
       const client = await table();
