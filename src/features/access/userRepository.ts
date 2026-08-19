@@ -1,19 +1,31 @@
-import type { CommuneUser } from "./types";
+import type { CommuneUser, UserGroup, UserRole } from "./types";
 
-const KEY = "communepilot-local-users-v1";
-export const seedUsers: CommuneUser[] = [
-  { id: "u-maire", firstName: "Bernard", lastName: "Boulocher", role: "Maire", active: true, email: "maire@commune.local" },
-  { id: "u-adjoint", firstName: "Claire", lastName: "Martin", role: "Adjoint", active: true },
-  { id: "u-conseiller", firstName: "Louis", lastName: "Robert", role: "Conseiller", active: true },
-  { id: "u-admin", firstName: "Sophie", lastName: "Durand", role: "Agent administratif", active: true },
-  { id: "u-tech", firstName: "Jean", lastName: "Petit", role: "Agent technique", active: true, phone: "06 00 00 00 00" },
-  { id: "u-tech-2", firstName: "Marc", lastName: "Morel", role: "Agent technique", active: true },
-];
+const KEY = "communepilot-directory-cache-v2";
+const LEGACY_KEY = "communepilot-local-users-v1";
+const now = () => new Date().toISOString();
+const groupForRole = (role: UserRole): UserGroup => role === "Maire" || role === "Adjoint" ? "Maire et adjoints" : role === "Conseiller" ? "Conseillers municipaux" : role === "Agent administratif" ? "Agents administratifs" : "Agents techniques";
+
+export const sessionUser: CommuneUser = { id: "current-user", firstName: "Utilisateur", lastName: "CommunePilot", role: "Maire", group: "Maire et adjoints", jobTitle: "Compte connecté", active: true, addressVisibility: "administrators", commissionIds: [], createdAt: now(), updatedAt: now() };
+
+function normalize(value: Partial<CommuneUser> & Pick<CommuneUser, "id" | "firstName" | "lastName" | "role">): CommuneUser {
+  const timestamp = now();
+  return { ...value, group: value.group ?? groupForRole(value.role), jobTitle: value.jobTitle ?? value.role, active: value.active !== false, addressVisibility: value.addressVisibility ?? "administrators", commissionIds: Array.isArray(value.commissionIds) ? value.commissionIds : [], createdAt: value.createdAt ?? timestamp, updatedAt: value.updatedAt ?? timestamp };
+}
+
+function parse(key: string): CommuneUser[] {
+  try { const values = JSON.parse(localStorage.getItem(key) ?? "[]"); return Array.isArray(values) ? values.map(normalize) : []; } catch { return []; }
+}
 
 function load(): CommuneUser[] {
-  try { const value = JSON.parse(localStorage.getItem(KEY) ?? "null"); return Array.isArray(value) ? value : seedUsers; } catch { return seedUsers; }
+  const cached = parse(KEY);
+  if (cached.length) return cached;
+  const legacy = parse(LEGACY_KEY);
+  if (legacy.length) { localStorage.setItem(KEY, JSON.stringify(legacy)); return legacy; }
+  return [sessionUser];
 }
+
 export const userRepository = {
   list: load,
   save(users: CommuneUser[]) { localStorage.setItem(KEY, JSON.stringify(users)); window.dispatchEvent(new Event("communepilot:users")); },
+  lightweight(users: CommuneUser[]) { return users.map((user) => ({ ...user, photoUrl: user.photoUrl?.startsWith("data:") ? undefined : user.photoUrl, thumbnailUrl: user.thumbnailUrl?.startsWith("data:") ? undefined : user.thumbnailUrl })); },
 };

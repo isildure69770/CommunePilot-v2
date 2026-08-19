@@ -288,6 +288,13 @@ useEffect(() => {
         <button className="primary-button" type="button" onClick={() => setIsModalOpen(true)}>+ Nouveau dossier</button>
       </div>
 
+      <div className="dashboard-village-banner">
+        <img
+          src="/images/montrottier-panorama.jpg"
+          alt="Vue panoramique du village de Montrottier"
+        />
+      </div>
+
       <div className="dashboard-global-search"><Search aria-hidden="true" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher un dossier, un mail ou un signalement…" aria-label="Recherche globale" />{search && <button type="button" onClick={() => setSearch("")}>Effacer</button>}{search && <div className="dashboard-search-results">{searchResults.map((result) => <Link key={result.id} to={result.path}><div><strong>{result.title}</strong><span>{result.detail}</span></div><ArrowRight /></Link>)}{searchResults.length === 0 && <p>Aucun résultat dans les données disponibles.</p>}</div>}</div>
 
       <section className="commission-picker" aria-labelledby="commission-picker-title"><div className="section-heading"><div><span className="section-kicker">Espaces de travail</span><h3 id="commission-picker-title">Choisir une commission</h3><p>Accédez aux données existantes, automatiquement filtrées par commission.</p></div></div><div className="commission-picker-grid">{commissionCards.map((commission)=>{const Icon=commission.icon;return <Link className={`commission-choice commission-choice-${commission.tone}`} to={commission.route} key={commission.id}><span className="commission-choice-icon"><Icon/></span><div className="commission-choice-copy"><strong>{commission.label}</strong><small>{commission.description}</small></div><div className="commission-choice-counts"><span><b>{commission.active}</b> actif{commission.active>1?"s":""}</span><span><b>{commission.missions}</b> mission{commission.missions>1?"s":""}</span><span><b>{commission.alerts}</b> signalement{commission.alerts>1?"s":""}</span></div><ArrowRight className="commission-choice-arrow"/></Link>})}</div></section>

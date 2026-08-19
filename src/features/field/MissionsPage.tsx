@@ -33,7 +33,8 @@ export default function MissionsPage() {
   const [agentFilter, setAgentFilter] = useState<"Actives" | "Terminées" | "Toutes">("Actives");
   const [selectedMissionId, setSelectedMissionId] = useState<string>();
   const dossiers = loadDossiers() ?? initialDossiers;
-  const agents = useMemo(() => users.filter((candidate) => candidate.active && candidate.role === "Agent technique"), [users]);
+  const agents = useMemo(() => users.filter((candidate) => candidate.active && candidate.group === "Agents techniques"), [users]);
+  const migratedDefaultAgents = useMemo(() => agents.filter((agent) => ["u-tech", "u-tech-2"].includes(agent.id)).map((agent) => agent.id), [agents]);
   const visibleMissions = user.role === "Agent technique" ? missions.filter((mission) => mission.assigneeIds.includes(user.id)) : missions;
   const activeMissions = visibleMissions.filter((mission) => !mission.archivedAt);
   const archivedMissions = visibleMissions.filter((mission) => Boolean(mission.archivedAt));
@@ -88,7 +89,7 @@ export default function MissionsPage() {
     <div className="page-heading"><div><span className="eyebrow">Services techniques</span><h2>Missions</h2><p>Planifiez les interventions et consultez les comptes rendus terrain.</p></div>{can("missions", "create") && <button className="primary-button" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={18}/> Nouvelle mission</button>}</div>
     <div className="mission-grid">{activeMissions.map((mission) => missionCard(mission))}{activeMissions.length === 0 && <div className="empty-state"><ClipboardList/><strong>Aucune mission active</strong><span>Les missions archivées restent disponibles ci-dessous.</span></div>}</div>
     {archivedMissions.length > 0 && <details className="mission-archives"><summary><Archive/>Archives ({archivedMissions.length})</summary><div className="mission-grid">{archivedMissions.map((mission) => missionCard(mission, true))}</div></details>}
-    {formOpen && <MissionForm mission={editing} users={agents} dossiers={dossiers} initialCategory={commission || "Voirie"} defaultAssigneeIds={agents.map((agent) => agent.id)} onClose={closeForm} onSubmit={save}/>}
+    {formOpen && <MissionForm mission={editing} users={agents} dossiers={dossiers} initialCategory={commission || "Voirie"} defaultAssigneeIds={migratedDefaultAgents} onClose={closeForm} onSubmit={save}/>}
   </section>;
 }
 
