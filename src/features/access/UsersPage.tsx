@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Archive, Mail, Pencil, Phone, Plus, Search, UserRound, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { COMMISSIONS } from "../commissions/commissions";
 import { useIdentity } from "./LocalIdentityProvider";
 import { roles, userGroups, type CommuneUser, type UserGroup, type UserRole } from "./types";
@@ -8,15 +9,18 @@ import { uploadDirectoryPhoto, useDirectory } from "./useDirectory";
 const emptyUser = (): CommuneUser => { const now = new Date().toISOString(); return { id: `user-${crypto.randomUUID()}`, firstName: "", lastName: "", role: "Conseiller", group: "Conseillers municipaux", jobTitle: "", active: true, addressVisibility: "administrators", commissionIds: [], createdAt: now, updatedAt: now }; };
 
 export default function UsersPage() {
+  const [params, setParams] = useSearchParams();
   const { can } = useIdentity(); const { users, loading, error, save } = useDirectory();
   const [query, setQuery] = useState(""); const [group, setGroup] = useState(""); const [commission, setCommission] = useState(""); const [editing, setEditing] = useState<CommuneUser | null>(null);
+  useEffect(() => { if (params.get("new") === "1" && can("utilisateurs", "create")) setEditing(emptyUser()); }, [params, can]);
+  const closeForm = () => { setEditing(null); if (params.has("new")) { const next = new URLSearchParams(params); next.delete("new"); setParams(next, { replace: true }); } };
   const filtered = useMemo(() => users.filter((user) => { const haystack = `${user.firstName} ${user.lastName} ${user.jobTitle} ${user.email ?? ""}`.toLocaleLowerCase("fr"); return (!query || haystack.includes(query.toLocaleLowerCase("fr"))) && (!group || user.group === group) && (!commission || user.commissionIds.includes(commission)); }).sort((a, b) => Number(b.active) - Number(a.active) || a.lastName.localeCompare(b.lastName, "fr")), [users, query, group, commission]);
   return <section className="directory-page"><div className="page-heading"><div><span className="eyebrow">Annuaire partagé</span><h2>Utilisateurs</h2><p>Une fiche unique, réutilisable dans les contacts, missions, commissions et services.</p></div>{can("utilisateurs", "create") && <button className="primary-button" onClick={() => setEditing(emptyUser())}><Plus/>Ajouter un membre</button>}</div>
     {error && <div className="local-mode-notice">Mode hors ligne : le cache local est affiché. {error}</div>}
     <div className="directory-toolbar"><label><Search/><input aria-label="Rechercher" placeholder="Rechercher un nom, une fonction…" value={query} onChange={(event) => setQuery(event.target.value)}/></label><select aria-label="Filtrer par groupe" value={group} onChange={(event) => setGroup(event.target.value)}><option value="">Tous les groupes</option>{userGroups.map((value) => <option key={value}>{value}</option>)}</select><select aria-label="Filtrer par commission" value={commission} onChange={(event) => setCommission(event.target.value)}><option value="">Toutes les commissions</option>{COMMISSIONS.map((value) => <option value={value.id} key={value.id}>{value.label}</option>)}</select></div>
     {loading && <p className="directory-status">Chargement de l’annuaire…</p>}
     <div className="directory-grid">{filtered.map((contact) => <article className={`directory-card${contact.active ? "" : " is-inactive"}`} key={contact.id}><div className="directory-avatar">{contact.thumbnailUrl ? <img src={contact.thumbnailUrl} alt=""/> : <UserRound/>}</div><div className="directory-card-copy"><div><strong>{contact.firstName} {contact.lastName}</strong>{!contact.active && <span>Inactif</span>}</div><p>{contact.jobTitle || contact.group}</p><small>{contact.group}</small><div className="directory-commissions">{contact.commissionIds.map((id) => <span key={id}>{COMMISSIONS.find((item) => item.id === id)?.label ?? id}</span>)}</div></div><div className="directory-actions">{contact.phone && <a href={`tel:${contact.phone.replace(/\s/g, "")}`}><Phone/> {contact.phone}</a>}{contact.email && <a href={`mailto:${contact.email}`}><Mail/> {contact.email}</a>}{can("utilisateurs", "update") && <button className="secondary-button" onClick={() => setEditing(contact)}><Pencil/>Modifier</button>}</div></article>)}{!loading && !filtered.length && <div className="empty-state"><UserRound/><strong>Aucun contact</strong><span>Ajoutez un membre ou modifiez les filtres.</span></div>}</div>
-    {editing && <UserForm initial={editing} onClose={() => setEditing(null)} onSave={async (value) => { await save(value); setEditing(null); }}/>} </section>;
+    {editing && <UserForm initial={editing} onClose={closeForm} onSave={async (value) => { await save(value); closeForm(); }}/>} </section>;
 }
 
 function UserForm({ initial, onClose, onSave }: { initial: CommuneUser; onClose(): void; onSave(value: CommuneUser): Promise<void> }) {

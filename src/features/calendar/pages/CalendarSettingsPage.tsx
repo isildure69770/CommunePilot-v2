@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { CalendarDays, RefreshCw, Unplug } from "lucide-react";
+import { CalendarDays, RefreshCw, Unplug, UserPlus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useIdentity } from "../../access/LocalIdentityProvider";
 import { GOOGLE_CALENDAR_SCOPES, googleCalendarProvider, googleCalendarStateRepository, type CalendarDestination } from "../providers/googleCalendarProvider";
 
@@ -18,6 +19,7 @@ export default function CalendarSettingsPage() {
   const sync = () => run(async () => { await googleCalendarProvider.sync(); setMessage("Synchronisation terminée sans modifier les événements locaux."); });
   const update = (id: string, values: Partial<(typeof state.calendars)[number]>) => { const next = { ...state, calendars: state.calendars.map((calendar) => calendar.id === id ? { ...calendar, ...values } : calendar) }; googleCalendarStateRepository.save(next); setState(next); };
   return <section className="calendar-settings-page"><div className="page-heading"><div><span className="eyebrow">Paramètres · Calendriers connectés</span><h2>Calendriers connectés</h2><p>Choisissez les agendas externes visibles dans CommunePilot.</p></div></div>
+    {can("utilisateurs", "create") && <article className="settings-user-card"><span><UserPlus/></span><div><h3>Gestion des utilisateurs</h3><p>Créer une fiche pour un élu, un conseiller ou un agent communal.</p></div><Link className="primary-button" to="/utilisateurs?new=1"><UserPlus/>Créer un utilisateur</Link></article>}
     <article className={`google-calendar-card ${connected ? "connected" : ""}`}><header><span className="google-calendar-icon"><CalendarDays /></span><div><h3>Google Calendar</h3><p>Synchronisation multi-agendas en lecture seule.</p></div><strong>{!configured ? "Configuration requise" : connected ? "Connecté" : "Déconnecté"}</strong></header>
       {!configured && <div className="calendar-config-notice"><strong>Configuration Google requise</strong><span>Ajoutez l’identifiant public OAuth dans <code>VITE_GOOGLE_CLIENT_ID</code>, puis redémarrez l’application.</span></div>}
       {!allowed && <div className="calendar-config-notice"><strong>Accès en consultation</strong><span>Votre profil peut voir les événements, mais pas connecter ni configurer un fournisseur.</span></div>}
