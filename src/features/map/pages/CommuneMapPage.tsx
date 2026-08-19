@@ -22,6 +22,8 @@ import { useIdentity } from "../../access/LocalIdentityProvider";
 import { exportLayerGeoJson } from "../services/businessLayerExport";
 import { calculateLineLength } from "../services/customLayerStorage";
 import { routingConfiguration, routingErrorMessage } from "../services/roadRouting";
+import { ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface SelectedPosition {
   latitude: number;
@@ -108,6 +110,7 @@ export default function CommuneMapPage() {
   }, [user.role]);
 
   const drawingLayer = customMap.layers.find((layer) => layer.id === drawingLayerId);
+  const displayedMarkers = user.role === "Agent technique" ? markers.filter((marker) => marker.type === "mission" && marker.assigneeIds?.includes(user.id) && marker.status !== "Terminée" && marker.status !== "Annulée") : markers;
 
   function startDrawing(layerId: string) {
     setDrawingLayerId(layerId);
@@ -188,6 +191,7 @@ export default function CommuneMapPage() {
 
   return (
     <section className="commune-map-page">
+      {user.role === "Agent technique" && <Link className="agent-page-back" to="/terrain"><ArrowLeft/>Retour aux missions</Link>}
       <div className="page-heading">
         <div>
           <span className="eyebrow">
@@ -215,10 +219,9 @@ export default function CommuneMapPage() {
       {user.role !== "Agent technique" && <MapStatistics statistics={statistics}/>}
 
       <div className="commune-map-legend">
-        <div><span className="legend-map-icon legend-cone"/>Chantier</div>
-        <div><span className="legend-map-icon legend-warning">!</span>Remontée terrain</div>
+        {user.role !== "Agent technique" && <><div><span className="legend-map-icon legend-cone"/>Chantier</div><div><span className="legend-map-icon legend-warning">!</span>Remontée terrain</div></>}
         <div><span className="legend-map-icon legend-agent">👷</span>Mission agent</div>
-        <div><span className="legend-map-icon legend-validated">✓</span>Réalisé / validé</div>
+        {user.role !== "Agent technique" && <div><span className="legend-map-icon legend-validated">✓</span>Réalisé / validé</div>}
         <div className="legend-severity"><span className="legend-level is-green"/>Normal</div>
         <div className="legend-severity"><span className="legend-level is-orange"/>Important</div>
         <div className="legend-severity"><span className="legend-level is-red"/>Urgent</div>
@@ -297,7 +300,7 @@ export default function CommuneMapPage() {
       )}
 
       <CommuneMap
-        markers={markers}
+        markers={displayedMarkers}
         agentMode={user.role === "Agent technique"}
         agentPosition={user.role === "Agent technique" ? agentPosition : null}
         agentFocusRequest={agentFocusRequest}

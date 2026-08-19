@@ -18,6 +18,8 @@ export default function Header({ onOpenMenu }: HeaderProps) {
     pathname === item.path || (item.path !== "/dashboard" && pathname.startsWith(`${item.path}/`)),
   );
 
+  if (user.role === "Agent technique") return <header className="header agent-app-header"><div><strong>{user.firstName} {user.lastName}</strong><span>Agent technique</span></div><select className="profile-switcher" aria-label="Changer de profil local" value={user.id} onChange={(event) => { const nextUser = users.find((candidate) => candidate.id === event.target.value); setCurrentUser(event.target.value); navigate(nextUser?.role === "Agent technique" ? "/terrain" : "/dashboard"); }}>{users.filter((candidate) => candidate.active).map((candidate) => <option value={candidate.id} key={candidate.id}>{candidate.firstName} — {candidate.role}</option>)}</select></header>;
+
   return (
     <header className="header">
       <div className="header-title">

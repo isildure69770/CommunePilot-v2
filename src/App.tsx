@@ -2,6 +2,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from "react-router-dom";
 
 import MainLayout from "./layout/MainLayout";
@@ -29,14 +30,22 @@ import NotificationsPage from "./features/field/NotificationsPage";
 import CalendarPage from "./features/calendar/pages/CalendarPage";
 import CalendarSettingsPage from "./features/calendar/pages/CalendarSettingsPage";
 import CommissionPage from "./features/commissions/pages/CommissionPage";
+import AgentContactsPage from "./features/field/AgentContactsPage";
 
 const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
 function HomeRedirect() { const { user } = useIdentity(); return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
+function ScopedLayout() {
+  const { user } = useIdentity();
+  const { pathname } = useLocation();
+  const agentPaths = ["/terrain", "/missions", "/carte", "/contacts"];
+  if (user.role === "Agent technique" && !agentPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return <Navigate to="/terrain" replace/>;
+  return <MainLayout/>;
+}
 
 export default function App() {
   return (
     <MicrosoftAuthProvider><MailSyncProvider><LocalIdentityProvider><Routes>
-      <Route element={<MainLayout />}>
+      <Route element={<ScopedLayout />}>
         <Route
           path="/dashboard"
           element={protect("dashboard", <Dashboard />)}
@@ -97,6 +106,7 @@ export default function App() {
 
         <Route path="/missions" element={protect("missions", <MissionsPage />)} />
         <Route path="/terrain" element={protect("missions", <TerrainPage />)} />
+        <Route path="/contacts" element={<AgentContactsPage/>} />
         <Route path="/alertes-terrain" element={protect("signalements", <FieldAlertsPage />, "update")} />
         <Route path="/utilisateurs" element={protect("utilisateurs", <UsersPage />)} />
         <Route path="/notifications" element={<NotificationsPage />} />

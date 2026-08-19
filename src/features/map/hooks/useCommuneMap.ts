@@ -79,6 +79,7 @@ export interface CommuneMapMarker {
 
   equipmentId?: string;
   date?: string;
+  assigneeIds?: string[];
 }
 
 export function useCommuneMap() {
@@ -372,7 +373,7 @@ export function useCommuneMap() {
             date: alert.createdAt,
           }));
 
-        const missionMarkers = missions.filter((mission) => hasValidCoordinates(mission.latitude, mission.longitude) && !mission.archivedAt).map((mission): CommuneMapMarker => ({ id: `mission-${mission.id}`, sourceId: mission.id, type: "mission", title: mission.title, location: mission.address, latitude: mission.latitude!, longitude: mission.longitude!, status: mission.status, priority: mission.priority, description: mission.description, date: mission.updatedAt }));
+        const missionMarkers = missions.filter((mission) => hasValidCoordinates(mission.latitude, mission.longitude) && !mission.archivedAt).map((mission): CommuneMapMarker => ({ id: `mission-${mission.id}`, sourceId: mission.id, type: "mission", title: mission.title, location: mission.address, latitude: mission.latitude!, longitude: mission.longitude!, status: mission.status, priority: mission.priority, description: mission.description, date: mission.updatedAt, assigneeIds: mission.assigneeIds }));
 
         return [
           ...chantierMarkers,

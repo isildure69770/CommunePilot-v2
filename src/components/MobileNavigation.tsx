@@ -1,4 +1,4 @@
-import { FolderKanban, Gauge, ListTodo, Mail, Map, MoreHorizontal, Plus, Wrench } from "lucide-react";
+import { AlertTriangle, ContactRound, FolderKanban, Gauge, ListTodo, Mail, Map, MoreHorizontal, Plus, Wrench } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useIdentity } from "../features/access/LocalIdentityProvider";
 
@@ -8,9 +8,11 @@ const mobileItems = [
 ];
 
 const agentMobileItems = [
-  { label: "Terrain", path: "/terrain", icon: Wrench },
+  { label: "Accueil", path: "/terrain", icon: Wrench },
   { label: "Missions", path: "/missions", icon: ListTodo },
+  { label: "Alertes", path: "/terrain?mes-alertes=1", icon: AlertTriangle },
   { label: "Carte", path: "/carte", icon: Map },
+  { label: "Contacts", path: "/contacts", icon: ContactRound },
 ];
 
 export default function MobileNavigation({ onOpenMore }: { onOpenMore: () => void }) {
@@ -26,10 +28,6 @@ export default function MobileNavigation({ onOpenMore }: { onOpenMore: () => voi
           </NavLink>
         );
       })}
-      <button type="button" onClick={onOpenMore}>
-        <MoreHorizontal size={21} />
-        <span>Plus</span>
-      </button>
     </nav>
   );
   return (
