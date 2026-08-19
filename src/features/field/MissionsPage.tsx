@@ -15,6 +15,7 @@ import { makeId } from "./repository";
 import type { Mission, MissionPriority, MissionStatus } from "./types";
 import { useFieldData } from "./useFieldData";
 import { dossierActivityRepository } from "../dossiers/services/dossierActivityRepository";
+import MissionFlowCard, { missionCompletion, missionPhotos } from "./MissionFlowCard";
 
 const DEFAULT_LATITUDE = 45.790833;
 const DEFAULT_LONGITUDE = 4.4675;
@@ -28,12 +29,18 @@ export default function MissionsPage() {
   const { missions, saveMissions, notify } = useFieldData();
   const [editing, setEditing] = useState<Mission | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [agentFilter, setAgentFilter] = useState<"Actives" | "Terminées" | "Toutes">("Actives");
+  const [selectedMissionId, setSelectedMissionId] = useState<string>();
   const dossiers = loadDossiers() ?? initialDossiers;
   const agents = useMemo(() => users.filter((candidate) => candidate.active && candidate.role === "Agent technique"), [users]);
   const visibleMissions = user.role === "Agent technique" ? missions.filter((mission) => mission.assigneeIds.includes(user.id)) : missions;
   const activeMissions = visibleMissions.filter((mission) => !mission.archivedAt);
   const archivedMissions = visibleMissions.filter((mission) => Boolean(mission.archivedAt));
   const canArchive = ["Maire", "Adjoint"].includes(user.role) && can("missions", "update");
+  const agentActiveMissions = missions.filter((mission) => mission.assigneeIds.includes(user.id) && !mission.archivedAt && mission.status !== "Terminée" && mission.status !== "Annulée");
+  const sharedCompletedMissions = missions.filter((mission) => mission.status === "Terminée" && !mission.archivedAt);
+  const agentFlowMissions = agentFilter === "Actives" ? agentActiveMissions : agentFilter === "Terminées" ? sharedCompletedMissions : [...agentActiveMissions, ...sharedCompletedMissions];
+  const selectedMission = missions.find((mission) => mission.id === selectedMissionId);
 
   useEffect(() => { if (params.get("new") === "1") { setEditing(null); setFormOpen(true); } }, [params]);
   const closeForm = () => { setFormOpen(false); setEditing(null); };
@@ -69,12 +76,25 @@ export default function MissionsPage() {
     <div className="mission-card-actions">{can("missions", "update") && !archived && <button className="secondary-button" type="button" onClick={() => { setEditing(mission); setFormOpen(true); }}><Pencil/>Modifier</button>}{canArchive && mission.status === "Terminée" && !archived && <button className="mission-archive-button" type="button" onClick={() => setArchived(mission, true)}><Archive/>Archiver</button>}{canArchive && archived && <button className="mission-restore-button" type="button" onClick={() => setArchived(mission, false)}><RotateCcw/>Restaurer</button>}</div>
   </article>;
 
+  if (user.role === "Agent technique") return <section className="missions-page agent-missions-page">
+    <div className="page-heading"><div><span className="eyebrow">Terrain</span><h2>Mes missions</h2><p>Vos missions actives et l’historique partagé de l’équipe technique.</p></div></div>
+    <nav className="mission-flow-filters" aria-label="Filtrer les missions">{(["Actives", "Terminées", "Toutes"] as const).map((filter) => <button type="button" className={agentFilter === filter ? "active" : ""} onClick={() => setAgentFilter(filter)} key={filter}>{filter}<strong>{filter === "Actives" ? agentActiveMissions.length : filter === "Terminées" ? sharedCompletedMissions.length : agentActiveMissions.length + sharedCompletedMissions.length}</strong></button>)}</nav>
+    <div className="mission-flow-list">{agentFlowMissions.map((mission) => <MissionFlowCard key={mission.id} mission={mission} users={users} sharedCompletion={mission.status === "Terminée" && !mission.assigneeIds.includes(user.id)} onOpen={() => setSelectedMissionId(mission.id)}/>)}{agentFlowMissions.length === 0 && <div className="empty-state"><ClipboardList/><strong>Aucune mission</strong><span>Aucune mission ne correspond à ce filtre.</span></div>}</div>
+    {selectedMission && <AgentMissionSummary mission={selectedMission} users={users} onClose={() => setSelectedMissionId(undefined)}/>}
+  </section>;
+
   return <section className="missions-page">
-    <div className="page-heading"><div><span className="eyebrow">Services techniques</span><h2>Missions</h2><p>Planifiez les interventions et consultez les comptes rendus terrain.</p></div>{user.role !== "Agent technique" && can("missions", "create") && <button className="primary-button" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={18}/> Nouvelle mission</button>}</div>
+    <div className="page-heading"><div><span className="eyebrow">Services techniques</span><h2>Missions</h2><p>Planifiez les interventions et consultez les comptes rendus terrain.</p></div>{can("missions", "create") && <button className="primary-button" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={18}/> Nouvelle mission</button>}</div>
     <div className="mission-grid">{activeMissions.map((mission) => missionCard(mission))}{activeMissions.length === 0 && <div className="empty-state"><ClipboardList/><strong>Aucune mission active</strong><span>Les missions archivées restent disponibles ci-dessous.</span></div>}</div>
     {archivedMissions.length > 0 && <details className="mission-archives"><summary><Archive/>Archives ({archivedMissions.length})</summary><div className="mission-grid">{archivedMissions.map((mission) => missionCard(mission, true))}</div></details>}
     {formOpen && <MissionForm mission={editing} users={agents} dossiers={dossiers} initialCategory={commission || "Voirie"} defaultAssigneeIds={agents.map((agent) => agent.id)} onClose={closeForm} onSubmit={save}/>}
   </section>;
+}
+
+function AgentMissionSummary({ mission, users, onClose }: { mission: Mission; users: CommuneUser[]; onClose(): void }) {
+  const photos = missionPhotos(mission);
+  const completion = mission.status === "Terminée" ? missionCompletion(mission, users) : undefined;
+  return <div className="modal-backdrop mission-summary-backdrop" onMouseDown={onClose}><div className="modal mission-sheet" role="dialog" aria-modal="true" aria-label={mission.title} onMouseDown={(event) => event.stopPropagation()}><div className="mission-sheet-header"><button className="mission-back-button" type="button" onClick={onClose}>← Retour aux missions</button><span className={`mission-flow-priority priority-${mission.priority.toLowerCase()}`}>{mission.priority}</span></div><div className="mission-details"><h3>{mission.title}</h3>{mission.status === "Terminée" && <span className="mission-completed-stamp is-detail">TERMINÉE</span>}{photos.length > 0 && <a className="mission-detail-photo" href={photos[0].dataUrl} target="_blank" rel="noreferrer"><img src={photos[0].dataUrl || photos[0].thumbnailDataUrl} alt={photos[0].name}/><span>Agrandir la photo</span></a>}<p className="mission-detail-address"><MapPin/>{mission.address || "Lieu à préciser"}</p><p>{mission.description || "Aucune consigne complémentaire."}</p>{completion && <p className="mission-detail-completion">Terminée par <strong>{completion.agentName}</strong> le {new Date(completion.completedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}</p>}<dl><div><dt>Statut</dt><dd>{mission.status}</dd></div><div><dt>Catégorie</dt><dd>{mission.category}</dd></div><div><dt>Agents affectés</dt><dd>{mission.assigneeIds.map((id) => users.find((candidate) => candidate.id === id)?.firstName).filter(Boolean).join(", ")}</dd></div><div><dt>Priorité</dt><dd>{mission.priority}</dd></div></dl>{mission.reports.map((report, index) => <div className="report-card" key={`${report.completedAt}-${index}`}><strong>Compte rendu — {new Date(report.completedAt).toLocaleString("fr-FR")}</strong><p>{report.comment || "Aucune remarque"}</p></div>)}</div></div></div>;
 }
 
 function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigneeIds, onClose, onSubmit }: { mission: Mission | null; users: CommuneUser[]; dossiers: Dossier[]; initialCategory: string; defaultAssigneeIds: string[]; onClose(): void; onSubmit(value: MissionFormValue): Promise<void> }) {
