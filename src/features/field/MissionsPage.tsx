@@ -88,6 +88,16 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
   const [saving, setSaving] = useState(false);
   const mapSelectionRequest = useRef(0);
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+  useEffect(() => {
     if (!addressFocused || form.address.trim().length < 3) { setSuggestions([]); return; }
     const controller = new AbortController();
     const timer = window.setTimeout(async () => setSuggestions(await searchAddresses(form.address, controller.signal)), 350);
@@ -110,7 +120,7 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
   };
   const addFiles = async (files: FileList | null) => { setFileError(""); try { const attachments = await filesToAttachments(files, "auto"); update("attachments", [...form.attachments, ...attachments]); } catch (error) { setFileError(error instanceof Error ? error.message : "La photo n’a pas pu être préparée."); } };
   const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!form.assigneeIds.length) { setSaveError("Choisissez au moins un agent technique avant d’enregistrer."); return; } setSaveError(""); setSaving(true); try { await onSubmit({ ...form, title: form.title.trim(), description: form.description.trim(), address: form.address.trim() }); } catch (error) { setSaveError(error instanceof Error ? error.message : "La mission n’a pas pu être enregistrée. Les champs saisis sont conservés."); } finally { setSaving(false); } };
-  return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal mission-modal calendar-event-modal" role="dialog" aria-modal="true" aria-label={mission ? "Modifier la mission" : "Créer une mission"} onMouseDown={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">Planification terrain</span><h3>{mission ? "Modifier la mission" : "Nouvelle mission"}</h3></div><button className="icon-button" type="button" onClick={onClose} aria-label="Fermer"><X/></button></div><form className="calendar-event-form mission-event-form" onSubmit={submit}>
+  return <div className="modal-backdrop mission-modal-backdrop" onMouseDown={onClose}><div className="modal mission-modal calendar-event-modal" role="dialog" aria-modal="true" aria-label={mission ? "Modifier la mission" : "Créer une mission"} onMouseDown={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">Planification terrain</span><h3>{mission ? "Modifier la mission" : "Nouvelle mission"}</h3></div><button className="icon-button" type="button" onClick={onClose} aria-label="Fermer"><X/></button></div><form className="calendar-event-form mission-event-form" onSubmit={submit}>
     <label className="form-wide">Titre<input autoFocus required value={form.title} onChange={(event) => update("title", event.target.value)}/></label>
     <label className="form-wide">Consigne<textarea required rows={3} value={form.description} onChange={(event) => update("description", event.target.value)}/></label>
     <div className="form-wide mission-address-field"><label>Adresse<input value={form.address} autoComplete="off" onFocus={() => setAddressFocused(true)} onBlur={() => window.setTimeout(() => setAddressFocused(false), 150)} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value, latitude: undefined, longitude: undefined }))} placeholder="N° et voie à Montrottier…"/></label>{addressFocused && form.address.trim().length < 3 && <small className="address-help">Saisissez au moins 3 caractères. Seules les adresses de Montrottier sont proposées.</small>}{suggestions.length > 0 && <div className="address-suggestions" role="listbox">{suggestions.map((suggestion) => <button type="button" role="option" key={suggestion.id} onMouseDown={(event) => event.preventDefault()} onClick={() => selectSuggestion(suggestion)}><MapPin/><span>{suggestion.label}</span></button>)}</div>}<button className="secondary-button map-select-button" type="button" onClick={() => setMapOpen((current) => !current)}><MapPin/>{mapOpen ? "Masquer la carte" : "Sélectionner sur la carte"}</button>{addressStatus && <small className={`address-status${addressStatus.includes("refusé") || addressStatus.includes("non vérifiable") ? " is-error" : ""}`} role="status">{addressStatus}</small>}</div>
