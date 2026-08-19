@@ -7,9 +7,18 @@ type RemoteCollection = "missions" | "alerts";
 async function uploadAttachment(attachment: FileAttachment) {
   if (!attachment.dataUrl.startsWith("data:")) return attachment;
   const response = await fetch("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(attachment) });
-  if (!response.ok) throw new Error(`Envoi du fichier impossible (${response.status}).`);
+  if (!response.ok) {
+    const details = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(details?.error || `Envoi de « ${attachment.name} » impossible (${response.status}).`);
+  }
   const result = await response.json() as { dataUrl: string };
-  return { ...attachment, dataUrl: result.dataUrl };
+  let thumbnailDataUrl = attachment.thumbnailDataUrl;
+  if (thumbnailDataUrl?.startsWith("data:")) {
+    const thumbnailResponse = await fetch("/api/field-files", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...attachment, id: `${attachment.id}-thumb`, name: `aperçu-${attachment.name}`, dataUrl: thumbnailDataUrl }) });
+    if (!thumbnailResponse.ok) throw new Error(`Création de l’aperçu de « ${attachment.name} » impossible.`);
+    thumbnailDataUrl = ((await thumbnailResponse.json()) as { dataUrl: string }).dataUrl;
+  }
+  return { ...attachment, dataUrl: result.dataUrl, thumbnailDataUrl };
 }
 
 async function uploadFiles<T>(collection: RemoteCollection, values: T[]) {
@@ -17,7 +26,7 @@ async function uploadFiles<T>(collection: RemoteCollection, values: T[]) {
     const uploaded = await Promise.all((values as FieldAlert[]).map(async (alert) => ({ ...alert, photos: await Promise.all((alert.photos || []).map(uploadAttachment)) })));
     return uploaded as T[];
   }
-  const uploaded = await Promise.all((values as Mission[]).map(async (mission) => ({ ...mission, attachments: await Promise.all(mission.attachments.map(uploadAttachment)), reports: await Promise.all(mission.reports.map(async (report) => ({ ...report, photos: await Promise.all(report.photos.map(uploadAttachment)) }))) })));
+  const uploaded = await Promise.all((values as Mission[]).map(async (mission) => ({ ...mission, attachments: await Promise.all(mission.attachments.map(uploadAttachment)), reports: await Promise.all(mission.reports.map(async (report) => ({ ...report, photos: await Promise.all(report.photos.map(uploadAttachment)) }))), problems: await Promise.all((mission.problems ?? []).map(async (problem) => ({ ...problem, photos: await Promise.all(problem.photos.map(uploadAttachment)) }))) })));
   return uploaded as T[];
 }
 
@@ -42,6 +51,18 @@ async function synchronize<T extends { id: string; updatedAt?: string; createdAt
   return (await saved.json() as Record<RemoteCollection, T[]>)[collection] ?? merged;
 }
 
+function lightweightAttachment(attachment: FileAttachment): FileAttachment {
+  return { ...attachment, dataUrl: attachment.dataUrl.startsWith("data:") ? "" : attachment.dataUrl };
+}
+
+function lightweightMissions(values: Mission[]) {
+  return values.map((mission) => ({ ...mission, attachments: mission.attachments.map(lightweightAttachment), reports: mission.reports.map((report) => ({ ...report, photos: report.photos.map(lightweightAttachment) })), problems: mission.problems?.map((problem) => ({ ...problem, photos: problem.photos.map(lightweightAttachment) })) }));
+}
+
+function lightweightAlerts(values: FieldAlert[]) {
+  return values.map((alert) => ({ ...alert, photos: (alert.photos || []).map(lightweightAttachment) }));
+}
+
 export function useFieldData() {
   const [missions, setMissions] = useState(missionRepository.list);
   const [alerts, setAlerts] = useState(alertRepository.list);
@@ -54,19 +75,21 @@ export function useFieldData() {
     void synchronize("alerts", alertRepository.list()).then((values) => { if (active) alertRepository.save(values); }).catch(() => undefined);
     return () => { active = false; };
   }, []);
-  const saveMissions = useCallback((values: typeof missions) => {
-    missionRepository.save(values);
-    void synchronize("missions", values).then(missionRepository.save).catch(() => undefined);
+  const saveMissions = useCallback(async (values: Mission[]) => {
+    const uploaded = await uploadFiles("missions", values);
+    const saved = await synchronize("missions", uploaded);
+    const lightweight = lightweightMissions(saved);
+    missionRepository.save(lightweight);
+    setMissions(lightweight);
+    return lightweight;
   }, []);
-  const saveAlerts = useCallback((values: typeof alerts) => {
-    try {
-      alertRepository.save(values);
-    } catch (error) {
-      if (!(error instanceof DOMException) || !["QuotaExceededError", "NS_ERROR_DOM_QUOTA_REACHED"].includes(error.name)) throw error;
-      const lightweight = values.map((alert) => ({ ...alert, photos: (alert.photos || []).map((photo) => ({ ...photo, dataUrl: photo.dataUrl.startsWith("data:") ? (photo.thumbnailDataUrl || "") : photo.dataUrl })) }));
-      alertRepository.save(lightweight);
-    }
-    void synchronize("alerts", values).then(alertRepository.save).catch(() => undefined);
+  const saveAlerts = useCallback(async (values: FieldAlert[]) => {
+    const uploaded = await uploadFiles("alerts", values);
+    const saved = await synchronize("alerts", uploaded);
+    const lightweight = lightweightAlerts(saved);
+    alertRepository.save(lightweight);
+    setAlerts(lightweight);
+    return lightweight;
   }, []);
   const notify = (value: Omit<LocalNotification, "id" | "createdAt" | "readBy">) => notificationRepository.save([{ ...value, id: makeId("notif"), createdAt: new Date().toISOString(), readBy: [] }, ...notificationRepository.list()]);
   return { missions, alerts, notifications, saveMissions, saveAlerts, notify };

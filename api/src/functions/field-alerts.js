@@ -11,7 +11,7 @@ function principal(request) {
   try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
 }
 function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
-function cleanPhoto(photo) { const { dataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "" }; }
+function cleanPhoto(photo) { const { dataUrl, thumbnailDataUrl, ...metadata } = photo ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "", thumbnailDataUrl: typeof thumbnailDataUrl === "string" && thumbnailDataUrl.startsWith("/api/field-files/") ? thumbnailDataUrl : undefined }; }
 function cleanAlert(alert) { return { ...alert, photos: Array.isArray(alert.photos) ? alert.photos.map(cleanPhoto) : [] }; }
 function entityToAlert(entity) { return JSON.parse(entity.payload); }
 

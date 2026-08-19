@@ -42,21 +42,21 @@ export default function MissionsPage() {
     saveMissions(missions.map((item) => item.id === mission.id ? { ...item, archivedAt: archived ? now : undefined, updatedAt: now, history: [...item.history, { id: makeId("history"), at: now, userId: user.id, label: archived ? "Mission archivée" : "Mission restaurée des archives" }] } : item));
   }
 
-  function save(value: MissionFormValue) {
+  async function save(value: MissionFormValue) {
     const now = new Date().toISOString();
     try {
       if (editing) {
         const updated: Mission = { ...editing, ...value, updatedAt: now, history: [...editing.history, { id: makeId("history"), at: now, userId: user.id, label: "Mission modifiée" }] };
-        saveMissions(missions.map((item) => item.id === editing.id ? updated : item));
+        await saveMissions(missions.map((item) => item.id === editing.id ? updated : item));
         if (updated.dossierId) dossierActivityRepository.add({ dossierId: updated.dossierId, type: "mission", action: "updated", label: `${user.firstName} a modifié la mission ${updated.title}`, authorId: user.id, missionId: updated.id, timestamp: now });
       } else {
         const mission: Mission = { ...value, id: makeId("mission"), createdAt: now, updatedAt: now, reports: [], history: [{ id: makeId("history"), at: now, userId: user.id, label: "Mission créée" }] };
-        saveMissions([mission, ...missions]);
+        await saveMissions([mission, ...missions]);
         if (mission.dossierId) dossierActivityRepository.add({ dossierId: mission.dossierId, type: "mission", action: "created", label: `${user.firstName} a créé la mission ${mission.title}`, authorId: user.id, missionId: mission.id, timestamp: now });
         notify({ userIds: mission.assigneeIds, title: "Nouvelle mission", message: mission.title, link: "/terrain" });
       }
       closeForm();
-    } catch { window.alert("Impossible d’enregistrer : le stockage local du navigateur est probablement plein."); }
+    } catch (error) { throw error instanceof Error ? error : new Error("La mission n’a pas pu être enregistrée. Réessayez dans quelques instants."); }
   }
 
   const missionCard = (mission: Mission, archived = false) => <article className={`mission-card terrain-inspired-card${archived ? " is-archived" : ""}`} key={mission.id}>
@@ -76,12 +76,15 @@ export default function MissionsPage() {
   </section>;
 }
 
-function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigneeIds, onClose, onSubmit }: { mission: Mission | null; users: CommuneUser[]; dossiers: Dossier[]; initialCategory: string; defaultAssigneeIds: string[]; onClose(): void; onSubmit(value: MissionFormValue): void }) {
+function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigneeIds, onClose, onSubmit }: { mission: Mission | null; users: CommuneUser[]; dossiers: Dossier[]; initialCategory: string; defaultAssigneeIds: string[]; onClose(): void; onSubmit(value: MissionFormValue): Promise<void> }) {
   const [form, setForm] = useState<MissionFormValue>(() => mission ? { ...mission } : blankMission(defaultAssigneeIds, initialCategory));
   const [mapOpen, setMapOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [addressFocused, setAddressFocused] = useState(false);
   const [addressStatus, setAddressStatus] = useState("");
+  const [fileError, setFileError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!addressFocused || form.address.trim().length < 3) { setSuggestions([]); return; }
     const controller = new AbortController();
@@ -91,7 +94,8 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
   const update = <K extends keyof MissionFormValue>(key: K, value: MissionFormValue[K]) => setForm((current) => ({ ...current, [key]: value }));
   const selectSuggestion = (suggestion: AddressSuggestion) => { setForm((current) => ({ ...current, address: suggestion.label, latitude: suggestion.latitude, longitude: suggestion.longitude })); setSuggestions([]); setAddressFocused(false); setMapOpen(true); setAddressStatus("Adresse et point cartographique enregistrés."); };
   const selectOnMap = async (latitude: number, longitude: number) => { setForm((current) => ({ ...current, latitude, longitude })); setAddressStatus("Recherche de l’adresse…"); const result = await reverseGeocode(latitude, longitude); const address = result?.displayName.trim(); setForm((current) => ({ ...current, latitude, longitude, address: address || current.address })); setAddressStatus(address ? "Adresse détectée automatiquement." : "Coordonnées enregistrées ; adresse introuvable."); };
-  const submit = (event: React.FormEvent) => { event.preventDefault(); if (!form.assigneeIds.length) { window.alert("Choisissez au moins un agent technique avant d’enregistrer."); return; } onSubmit({ ...form, title: form.title.trim(), description: form.description.trim(), address: form.address.trim() }); };
+  const addFiles = async (files: FileList | null) => { setFileError(""); try { const attachments = await filesToAttachments(files, "auto"); update("attachments", [...form.attachments, ...attachments]); } catch (error) { setFileError(error instanceof Error ? error.message : "La photo n’a pas pu être préparée."); } };
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!form.assigneeIds.length) { setSaveError("Choisissez au moins un agent technique avant d’enregistrer."); return; } setSaveError(""); setSaving(true); try { await onSubmit({ ...form, title: form.title.trim(), description: form.description.trim(), address: form.address.trim() }); } catch (error) { setSaveError(error instanceof Error ? error.message : "La mission n’a pas pu être enregistrée. Les champs saisis sont conservés."); } finally { setSaving(false); } };
   return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal mission-modal calendar-event-modal" role="dialog" aria-modal="true" aria-label={mission ? "Modifier la mission" : "Créer une mission"} onMouseDown={(event) => event.stopPropagation()}><div className="modal-header"><div><span className="eyebrow">Planification terrain</span><h3>{mission ? "Modifier la mission" : "Nouvelle mission"}</h3></div><button className="icon-button" type="button" onClick={onClose} aria-label="Fermer"><X/></button></div><form className="calendar-event-form mission-event-form" onSubmit={submit}>
     <label className="form-wide">Titre<input autoFocus required value={form.title} onChange={(event) => update("title", event.target.value)}/></label>
     <label className="form-wide">Consigne<textarea required rows={3} value={form.description} onChange={(event) => update("description", event.target.value)}/></label>
@@ -103,7 +107,9 @@ function MissionForm({ mission, users, dossiers, initialCategory, defaultAssigne
     <label>Catégorie<select value={form.category} onChange={(event) => update("category", event.target.value)}><option>Voirie</option><option>Bâtiment</option><option>Espaces verts</option><option>Eau</option><option>Sécurité</option><option>Autre</option></select></label>
     <fieldset className="form-wide"><legend>Agents techniques</legend><div className="calendar-participants">{users.map((agent) => <label className="toggle-row" key={agent.id}><input type="checkbox" checked={form.assigneeIds.includes(agent.id)} onChange={(event) => update("assigneeIds", event.target.checked ? [...form.assigneeIds, agent.id] : form.assigneeIds.filter((id) => id !== agent.id))}/>{agent.firstName} {agent.lastName}</label>)}</div></fieldset>
     <label>Dossier lié<select value={form.dossierId ?? ""} onChange={(event) => update("dossierId", event.target.value ? Number(event.target.value) : undefined)}><option value="">Aucun</option>{dossiers.map((dossier) => <option value={dossier.id} key={dossier.id}>{dossier.title}</option>)}</select></label>
-    <label>Photos et documents<input type="file" multiple onChange={async (event) => update("attachments", [...form.attachments, ...await filesToAttachments(event.target.files, "document")])}/></label>
-    <div className="modal-actions form-wide"><button type="button" className="secondary-button" onClick={onClose}>Annuler</button><button className="primary-button" disabled={!form.assigneeIds.length}>{mission ? "Enregistrer les modifications" : "Créer et notifier"}</button></div>
+    <label>Photos et documents<input type="file" multiple accept="image/*,.pdf,.doc,.docx" onChange={(event) => void addFiles(event.target.files)}/>{fileError && <small className="field-error" role="alert">{fileError}</small>}</label>
+    {form.attachments.length > 0 && <div className="form-wide alert-photos">{form.attachments.map((file) => file.kind === "photo" ? <img key={file.id} src={file.thumbnailDataUrl || file.dataUrl} alt={file.name}/> : <span key={file.id}>{file.name}</span>)}</div>}
+    {saveError && <p className="form-wide alert-send-error" role="alert">{saveError} Les champs saisis sont conservés.</p>}
+    <div className="modal-actions form-wide"><button type="button" className="secondary-button" onClick={onClose}>Annuler</button><button className="primary-button" disabled={!form.assigneeIds.length || saving}>{saving ? "Envoi en cours…" : mission ? "Enregistrer les modifications" : "Créer et notifier"}</button></div>
   </form></div></div>;
 }

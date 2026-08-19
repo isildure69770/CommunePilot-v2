@@ -12,9 +12,9 @@ function principal(request) {
   try { return JSON.parse(Buffer.from(encoded, "base64").toString("utf8")); } catch { return null; }
 }
 function may(user, allowed) { return user?.userRoles?.some((role) => allowed.has(role)); }
-function cleanAttachment(attachment) { const { dataUrl, ...metadata } = attachment ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "" }; }
+function cleanAttachment(attachment) { const { dataUrl, thumbnailDataUrl, ...metadata } = attachment ?? {}; return { ...metadata, dataUrl: typeof dataUrl === "string" && dataUrl.startsWith("/api/field-files/") ? dataUrl : "", thumbnailDataUrl: typeof thumbnailDataUrl === "string" && thumbnailDataUrl.startsWith("/api/field-files/") ? thumbnailDataUrl : undefined }; }
 function cleanMission(mission) {
-  return { ...mission, attachments: Array.isArray(mission.attachments) ? mission.attachments.map(cleanAttachment) : [], reports: Array.isArray(mission.reports) ? mission.reports.map((report) => ({ ...report, photos: Array.isArray(report.photos) ? report.photos.map(cleanAttachment) : [] })) : [] };
+  return { ...mission, attachments: Array.isArray(mission.attachments) ? mission.attachments.map(cleanAttachment) : [], reports: Array.isArray(mission.reports) ? mission.reports.map((report) => ({ ...report, photos: Array.isArray(report.photos) ? report.photos.map(cleanAttachment) : [] })) : [], problems: Array.isArray(mission.problems) ? mission.problems.map((problem) => ({ ...problem, photos: Array.isArray(problem.photos) ? problem.photos.map(cleanAttachment) : [] })) : [] };
 }
 function entityToMission(entity) { return JSON.parse(entity.payload); }
 

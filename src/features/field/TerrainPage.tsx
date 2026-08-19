@@ -146,7 +146,7 @@ export default function TerrainPage() {
     {searchParams.get("nouvelle-alerte") === "1" && <AlertForm
       userId={user.id}
       onClose={() => setSearchParams({})}
-      onSubmit={(alert) => { saveAlerts([alert, ...alerts]); informManagers("Nouvelle alerte terrain", alert.category, "/alertes-terrain"); setSearchParams({}); }}
+      onSubmit={async (alert) => { await saveAlerts([alert, ...alerts]); informManagers("Nouvelle alerte terrain", alert.category, "/alertes-terrain"); setSearchParams({}); }}
     />}
     {deleteCandidate && <Modal onClose={() => setDeleteCandidate(undefined)} className="delete-alert-confirmation"><div className="modal-header"><div><span className="eyebrow">Confirmation</span><h3>Supprimer cette fiche ?</h3></div><button className="icon-button" type="button" onClick={() => setDeleteCandidate(undefined)} aria-label="Fermer"><X/></button></div><div className="delete-alert-summary"><Trash2/><p>La fiche « {deleteCandidate.category} » restera dans l’historique avec la date et le nom de la personne qui l’a supprimée.</p></div><div className="modal-actions"><button className="secondary-button" type="button" onClick={() => setDeleteCandidate(undefined)}>Annuler</button><button className="danger-button" type="button" onClick={() => deleteAlert(deleteCandidate)}><Trash2/>Confirmer la suppression</button></div></Modal>}
     {gallery && <PhotoGallery {...gallery} onChange={(index) => setGallery({ ...gallery, index })} onClose={() => setGallery(undefined)}/>}
@@ -158,11 +158,13 @@ function Modal({ children, onClose, className = "" }: { children: React.ReactNod
   return <div className="modal-backdrop" role="presentation" onMouseDown={onClose}><div className={`modal terrain-modal ${className}`} role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>{children}</div></div>;
 }
 
-function AlertForm({ onClose, onSubmit, userId }: { onClose(): void; onSubmit(value: FieldAlert): void; userId: string }) {
+function AlertForm({ onClose, onSubmit, userId }: { onClose(): void; onSubmit(value: FieldAlert): Promise<void>; userId: string }) {
   const [form, setForm] = useState({ category: "Voirie" as FieldAlert["category"], priority: "Normale" as FieldAlert["priority"], comment: "", address: "", latitude: undefined as number | undefined, longitude: undefined as number | undefined, photos: [] as FieldAlert["photos"] });
   const [geo, setGeo] = useState("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [sendError, setSendError] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const [sending, setSending] = useState(false);
   const locate = () => {
     setGeo("Localisation en cours…");
     if (!navigator.geolocation) {
@@ -181,16 +183,23 @@ function AlertForm({ onClose, onSubmit, userId }: { onClose(): void; onSubmit(va
       setGeo(result?.displayName ? "Adresse détectée automatiquement." : "Adresse indisponible : coordonnées GPS ajoutées.");
     }, () => setGeo("Localisation refusée ou indisponible."));
   };
-  const send = () => {
+  const selectPhotos = async (files: FileList | null) => {
+    setPhotoError("");
+    try { const photos = await filesToAttachments(files, "photo"); setForm((current) => ({ ...current, photos })); }
+    catch (error) { setPhotoError(error instanceof Error ? error.message : "La photo n’a pas pu être préparée. Les autres champs sont conservés."); }
+  };
+  const send = async () => {
     setSendError("");
     const now = new Date().toISOString();
-    try { onSubmit({ ...form, id: makeId("alerte"), status: "Nouveau", createdBy: userId, createdAt: now, updatedAt: now }); }
-    catch { setSendError("L’alerte n’a pas pu être enregistrée. Vérifiez votre connexion puis réessayez."); }
+    setSending(true);
+    try { await onSubmit({ ...form, id: makeId("alerte"), status: "Nouveau", createdBy: userId, createdAt: now, updatedAt: now }); }
+    catch (error) { setSendError(`${error instanceof Error ? error.message : "L’alerte n’a pas pu être enregistrée."} Les informations saisies sont conservées.`); }
+    finally { setSending(false); }
   };
   return <Modal onClose={onClose} className="agent-alert-wizard"><div className="modal-header"><button className="icon-button" onClick={step === 1 ? onClose : () => setStep((step - 1) as 1 | 2)} aria-label="Retour"><ChevronLeft/></button><h3>Nouvelle alerte</h3><button className="icon-button" onClick={onClose} aria-label="Fermer"><X/></button></div><ol className="alert-wizard-steps"><li className={step >= 1 ? "active" : ""}><b>1</b>Photo</li><li className={step >= 2 ? "active" : ""}><b>2</b>Infos</li><li className={step >= 3 ? "active" : ""}><b>3</b>Envoyer</li></ol>
-  {step === 1 && <div className="alert-photo-step"><label>{form.photos[0] ? <img src={form.photos[0].dataUrl} alt="Aperçu de l’alerte"/> : <><Camera/><strong>Prendre une photo</strong><span>Photographiez le problème terrain</span></>}<input type="file" accept="image/*" capture="environment" multiple onChange={async (event) => setForm({ ...form, photos: await filesToAttachments(event.target.files, "photo") })}/></label><div><label className="secondary-button">Galerie<input type="file" accept="image/*" multiple onChange={async (event) => setForm({ ...form, photos: await filesToAttachments(event.target.files, "photo") })}/></label><button className="primary-button" type="button" onClick={() => setStep(2)}>Continuer</button></div></div>}
+  {step === 1 && <div className="alert-photo-step"><label>{form.photos[0] ? <img src={photoPreview(form.photos[0])} alt="Aperçu de l’alerte"/> : <><Camera/><strong>Prendre une photo</strong><span>Photographiez le problème terrain</span></>}<input type="file" accept="image/*" capture="environment" multiple onChange={(event) => void selectPhotos(event.target.files)}/></label>{photoError && <p className="alert-send-error" role="alert">{photoError}</p>}<div><label className="secondary-button">Galerie<input type="file" accept="image/*" multiple onChange={(event) => void selectPhotos(event.target.files)}/></label><button className="primary-button" type="button" onClick={() => setStep(2)}>Continuer</button></div></div>}
   {step === 2 && <form className="field-form" onSubmit={(event) => { event.preventDefault(); setStep(3); }}><label>Type de problème<select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value as FieldAlert["category"] })}><option>Voirie</option><option>Bâtiment</option><option>Espaces verts</option><option>Eau</option><option>Sécurité</option><option>Autre</option></select></label><label>Urgence<select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value as FieldAlert["priority"] })}><option>Basse</option><option>Normale</option><option>Haute</option><option>Urgente</option></select></label><label>Localisation<input value={form.address} onChange={(event) => setForm({ ...form, address: event.target.value })} placeholder="Adresse ou position actuelle"/></label><button type="button" className="secondary-button" onClick={locate}><MapPin/>Utiliser ma position</button>{geo && <small>{geo}</small>}<label>Description<textarea required rows={4} value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} placeholder="Décrivez le problème…"/></label><button className="primary-button">Suivant</button></form>}
-  {step === 3 && <div className="alert-review-step"><span className="eyebrow">Résumé</span>{form.photos[0] && <img src={form.photos[0].dataUrl} alt="Photo de l’alerte"/>}<strong>{form.category} · {form.priority}</strong><p>{form.address || "Position GPS transmise"}</p><p>{form.comment}</p>{sendError && <p className="alert-send-error" role="alert">{sendError}</p>}<button className="terrain-submit" type="button" onClick={send}><Navigation/>Envoyer l’alerte</button><button className="secondary-button" type="button" onClick={() => setStep(2)}>Retour</button></div>}</Modal>;
+  {step === 3 && <div className="alert-review-step"><span className="eyebrow">Résumé</span>{form.photos[0] && <img src={photoPreview(form.photos[0])} alt="Photo de l’alerte"/>}<strong>{form.category} · {form.priority}</strong><p>{form.address || "Position GPS transmise"}</p><p>{form.comment}</p>{sendError && <p className="alert-send-error" role="alert">{sendError}</p>}<button className="terrain-submit" type="button" onClick={() => void send()} disabled={sending}><Navigation/>{sending ? "Envoi en cours…" : "Envoyer l’alerte"}</button><button className="secondary-button" type="button" onClick={() => setStep(2)}>Retour</button></div>}</Modal>;
 }
 
 function FinishForm({ mission, userId, onClose, onSubmit }: { mission?: Mission; userId: string; onClose(): void; onSubmit(value: Mission): void }) {
