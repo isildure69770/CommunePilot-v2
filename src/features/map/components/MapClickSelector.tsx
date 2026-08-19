@@ -5,8 +5,10 @@ import {
   Marker,
   Popup,
   TileLayer,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
+import { useEffect } from "react";
 
 
 
@@ -43,6 +45,12 @@ function ClickHandler({
     },
   });
 
+  return null;
+}
+
+function Recenter({ latitude, longitude }: { latitude: number; longitude: number }) {
+  const map = useMap();
+  useEffect(() => { map.setView([latitude, longitude], map.getZoom()); }, [latitude, longitude, map]);
   return null;
 }
 
@@ -104,6 +112,8 @@ export default function MapClickSelector({
           <ClickHandler
             onChange={onChange}
           />
+
+          <Recenter latitude={latitude} longitude={longitude} />
 
           <Marker
             position={[
