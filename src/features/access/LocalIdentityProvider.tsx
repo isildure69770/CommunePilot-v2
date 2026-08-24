@@ -16,4 +16,5 @@ export function LocalIdentityProvider({ children }: { children: React.ReactNode 
   const value = useMemo<IdentityValue>(() => ({ user, users, refreshUsers, setCurrentUser(id) { localStorage.setItem(PROFILE_KEY, id); setCurrentId(id); }, can: (domain, action = "view") => can(user.role, domain, action) }), [user, users]);
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
+// oxlint-disable-next-line react/only-export-components -- Le hook partage volontairement le contexte privé de ce fournisseur.
 export function useIdentity() { const value = useContext(IdentityContext); if (!value) throw new Error("Identity provider absent"); return value; }

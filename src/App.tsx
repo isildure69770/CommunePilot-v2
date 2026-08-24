@@ -1,4 +1,8 @@
 import {
+  lazy,
+  Suspense,
+} from "react";
+import {
   Navigate,
   Route,
   Routes,
@@ -6,36 +10,36 @@ import {
 
 import MainLayout from "./layout/MainLayout";
 
-import Dashboard from "./pages/Dashboard";
-import PlaceholderPage from "./pages/PlaceholderPage";
-
-import DossiersPage from "./features/dossiers/pages/DossiersPage";
-import DossierDetailPage from "./features/dossiers/pages/DossierDetailPage";
-import VoiriePage from "./features/voirie/pages/VoiriePage";
-import BusinessLayersPage from "./features/voirie/pages/BusinessLayersPage";
-import SignalementsPage from "./features/signalements/pages/SignalementsPage";
-import CommuneMapPage from "./features/map/pages/CommuneMapPage";
-import EquipmentDetailPage from "./features/equipments/pages/EquipmentDetailPage";
-import MailsPage from "./features/mails/pages/MailsPage";
 import { MicrosoftAuthProvider } from "./features/mails/auth/MicrosoftAuthProvider";
 import { MailSyncProvider } from "./features/mails/providers/MailSyncProvider";
 import { LocalIdentityProvider, useIdentity } from "./features/access/LocalIdentityProvider";
 import ProtectedRoute from "./features/access/ProtectedRoute";
-import UsersPage from "./features/access/UsersPage";
-import MissionsPage from "./features/field/MissionsPage";
-import TerrainPage from "./features/field/TerrainPage";
-import FieldAlertsPage from "./features/field/FieldAlertsPage";
-import NotificationsPage from "./features/field/NotificationsPage";
-import CalendarPage from "./features/calendar/pages/CalendarPage";
-import CalendarSettingsPage from "./features/calendar/pages/CalendarSettingsPage";
-import CommissionPage from "./features/commissions/pages/CommissionPage";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PlaceholderPage = lazy(() => import("./pages/PlaceholderPage"));
+const DossiersPage = lazy(() => import("./features/dossiers/pages/DossiersPage"));
+const DossierDetailPage = lazy(() => import("./features/dossiers/pages/DossierDetailPage"));
+const VoiriePage = lazy(() => import("./features/voirie/pages/VoiriePage"));
+const BusinessLayersPage = lazy(() => import("./features/voirie/pages/BusinessLayersPage"));
+const SignalementsPage = lazy(() => import("./features/signalements/pages/SignalementsPage"));
+const CommuneMapPage = lazy(() => import("./features/map/pages/CommuneMapPage"));
+const EquipmentDetailPage = lazy(() => import("./features/equipments/pages/EquipmentDetailPage"));
+const MailsPage = lazy(() => import("./features/mails/pages/MailsPage"));
+const UsersPage = lazy(() => import("./features/access/UsersPage"));
+const MissionsPage = lazy(() => import("./features/field/MissionsPage"));
+const TerrainPage = lazy(() => import("./features/field/TerrainPage"));
+const FieldAlertsPage = lazy(() => import("./features/field/FieldAlertsPage"));
+const NotificationsPage = lazy(() => import("./features/field/NotificationsPage"));
+const CalendarPage = lazy(() => import("./features/calendar/pages/CalendarPage"));
+const CalendarSettingsPage = lazy(() => import("./features/calendar/pages/CalendarSettingsPage"));
+const CommissionPage = lazy(() => import("./features/commissions/pages/CommissionPage"));
 
 const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
 function HomeRedirect() { const { user } = useIdentity(); return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
 
 export default function App() {
   return (
-    <MicrosoftAuthProvider><MailSyncProvider><LocalIdentityProvider><Routes>
+    <MicrosoftAuthProvider><MailSyncProvider><LocalIdentityProvider><Suspense fallback={<div className="empty-state">Chargement…</div>}><Routes>
       <Route element={<MainLayout />}>
         <Route
           path="/dashboard"
@@ -136,6 +140,6 @@ export default function App() {
           <HomeRedirect />
         }
       />
-    </Routes></LocalIdentityProvider></MailSyncProvider></MicrosoftAuthProvider>
+    </Routes></Suspense></LocalIdentityProvider></MailSyncProvider></MicrosoftAuthProvider>
   );
 }

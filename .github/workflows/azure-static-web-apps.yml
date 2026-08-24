@@ -3,7 +3,7 @@ name: Deploy CommunePilot to Azure
 on:
   push:
     branches:
-      - agent/centre-commande-responsive
+      - main
   workflow_dispatch:
 
 jobs:
