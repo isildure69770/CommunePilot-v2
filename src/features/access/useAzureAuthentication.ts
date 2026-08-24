@@ -19,7 +19,7 @@ export interface AzureDirectoryUser {
 
 export type AzureAuthenticationState =
   | { status: "local" | "loading" | "anonymous" | "error"; principal: null }
-  | { status: "authenticated"; principal: AzurePrincipal; users: AzureDirectoryUser[]; directoryError: string };
+  | { status: "authenticated"; principal: AzurePrincipal; users: AzureDirectoryUser[]; currentUserId?: string; directoryError: string };
 
 const isAzureHost = () => window.location.hostname.endsWith(".azurestaticapps.net");
 
@@ -58,8 +58,8 @@ export function useAzureAuthentication() {
         try {
           const response = await fetch("/api/users", { method: "PUT", credentials: "same-origin", signal: controller.signal });
           if (!response.ok) throw new Error(`Annuaire indisponible (${response.status}).`);
-          const body = await response.json() as { users?: AzureDirectoryUser[] };
-          setState({ status: "authenticated", principal: clientPrincipal, users: Array.isArray(body.users) ? body.users : [], directoryError: "" });
+          const body = await response.json() as { users?: AzureDirectoryUser[]; currentUserId?: string };
+          setState({ status: "authenticated", principal: clientPrincipal, users: Array.isArray(body.users) ? body.users : [], currentUserId: body.currentUserId, directoryError: "" });
         } catch (error) {
           if (error instanceof DOMException && error.name === "AbortError") return;
           setState({ status: "authenticated", principal: clientPrincipal, users: [], directoryError: error instanceof Error ? error.message : "Annuaire indisponible." });

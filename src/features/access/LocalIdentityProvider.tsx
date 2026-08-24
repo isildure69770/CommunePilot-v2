@@ -16,7 +16,8 @@ export function LocalIdentityProvider({ children }: { children: React.ReactNode 
   useEffect(() => { window.addEventListener("communepilot:users", refreshUsers); return () => window.removeEventListener("communepilot:users", refreshUsers); }, []);
   const localUser = users.find((item) => item.id === currentId && item.active) ?? users.find((item) => item.active) ?? seedUsers[0];
   const azureUser = useMemo(() => azureAuthentication.status === "authenticated" ? azureIdentity(azureAuthentication.principal) : undefined, [azureAuthentication]);
-  const user = azureUser ?? localUser;
+  const directoryUser = azureAuthentication.status === "authenticated" ? azureAuthentication.users.find((item) => item.id === azureAuthentication.currentUserId) : undefined;
+  const user = directoryUser ?? azureUser ?? localUser;
   const availableUsers = useMemo(() => azureUser
     ? (azureAuthentication.status === "authenticated" && azureAuthentication.users.length
       ? azureAuthentication.users
