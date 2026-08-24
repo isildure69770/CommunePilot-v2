@@ -43,13 +43,17 @@ export default function TerrainPage() {
   }
 
   async function addBefore(files: FileList | null) {
-    if (mission) replace({ ...mission, attachments: [...mission.attachments, ...await filesToAttachments(files, "photo", "avant")], updatedAt: new Date().toISOString() });
+    if (mission) {
+      const photos = (await filesToAttachments(files, "photo", "avant")).map((photo) => ({ ...photo, addedBy: user.id, addedByRole: "Agent technique" as const }));
+      replace({ ...mission, attachments: [...mission.attachments, ...photos], updatedAt: new Date().toISOString() });
+    }
   }
 
   function finish() {
     if (!mission || !window.confirm(outcome === "terminée" ? "Confirmer la clôture de cette mission ?" : "Confirmer qu’une nouvelle intervention est nécessaire ?")) return;
     const now = new Date().toISOString();
-    const next = { ...mission, status: (outcome === "terminée" ? "Terminée" : "À faire") as Mission["status"], updatedAt: now, reports: [...mission.reports, { agentId: user.id, completedAt: now, comment, outcome, photos: afterPhotos }], history: [...mission.history, { id: makeId("history"), at: now, userId: user.id, label: outcome === "terminée" ? "Mission terminée" : "Nouvelle intervention demandée" }] };
+    const reportPhotos = afterPhotos.map((photo) => ({ ...photo, addedBy: user.id, addedByRole: "Agent technique" as const }));
+    const next = { ...mission, status: (outcome === "terminée" ? "Terminée" : "À faire") as Mission["status"], updatedAt: now, reports: [...mission.reports, { agentId: user.id, completedAt: now, comment, outcome, photos: reportPhotos }], history: [...mission.history, { id: makeId("history"), at: now, userId: user.id, label: outcome === "terminée" ? "Mission terminée" : "Nouvelle intervention demandée" }] };
     replace(next);
     if (mission.dossierId) dossierActivityRepository.add({ dossierId: mission.dossierId, type: "mission", action: outcome === "terminée" ? "completed" : "report-added", label: outcome === "terminée" ? `${user.firstName} a terminé l’intervention ${mission.title}` : `${user.firstName} a ajouté un compte rendu à ${mission.title}`, authorId: user.id, missionId: mission.id, timestamp: now });
     informManagers("Compte rendu reçu", mission.title);
@@ -77,7 +81,11 @@ function MissionTiles({missions,onSelect}:{missions:Mission[];onSelect(id:string
 }
 
 function MissionDetail({mission,onBack,onAcknowledge,onStart,onAddPhoto,onFinish}:{mission:Mission;onBack():void;onAcknowledge():void;onStart():void;onAddPhoto(files:FileList|null):Promise<void>;onFinish():void}) {
+  const [section, setSection] = useState<"documents" | "map" | "photos">("photos");
   const photo = mission.attachments.find((attachment) => attachment.kind === "photo" && attachment.dataUrl);
+  const documents = mission.attachments.filter((attachment) => attachment.kind === "document");
+  const electedPhotos = mission.attachments.filter((attachment) => attachment.kind === "photo" && attachment.addedByRole !== "Agent technique");
+  const agentPhotos = [...mission.attachments.filter((attachment) => attachment.kind === "photo" && attachment.addedByRole === "Agent technique"), ...mission.reports.flatMap((report) => report.photos)];
   const mapUrl = mission.latitude !== undefined && mission.longitude !== undefined
     ? `https://www.openstreetmap.org/export/embed.html?bbox=${mission.longitude - 0.006}%2C${mission.latitude - 0.004}%2C${mission.longitude + 0.006}%2C${mission.latitude + 0.004}&layer=mapnik&marker=${mission.latitude}%2C${mission.longitude}`
     : undefined;
@@ -86,12 +94,21 @@ function MissionDetail({mission,onBack,onAcknowledge,onStart,onAddPhoto,onFinish
     <button type="button" className="agent-back" onClick={onBack}><ArrowLeft/> Mes missions</button>
     <div className="agent-detail-hero">{photo ? <img src={photo.dataUrl} alt="Vue de la mission"/> : <div><Wrench/><span>Mission terrain</span></div>}<span className={`priority priority-${mission.priority.toLowerCase()}`}>{mission.priority}</span></div>
     <div className="agent-detail-content"><header><span className="eyebrow">{mission.category} · {mission.status}</span><h2>{mission.title}</h2><p>{mission.description}</p></header>
-      <section className="agent-location"><div><MapPin/><span><strong>Adresse</strong>{mission.address || "Adresse à préciser"}</span></div>{mapUrl && <iframe title={`Carte de ${mission.title}`} src={mapUrl} loading="lazy"/>}<a href={directionsUrl} target="_blank" rel="noreferrer"><Navigation/> Ouvrir l’itinéraire</a></section>
-      {mission.dueDate && <div className="agent-due-date"><Clock3/><span><strong>Échéance</strong>{new Date(mission.dueDate).toLocaleString("fr-FR")}</span></div>}
+      <div className="agent-mission-facts"><div><MapPin/><span><strong>Adresse</strong>{mission.address || "Adresse à préciser"}</span></div>{mission.dueDate && <div><Clock3/><span><strong>Échéance</strong>{new Date(mission.dueDate).toLocaleString("fr-FR")}</span></div>}</div>
       <div className="mission-workflow"><span className={mission.status !== "À faire" ? "done" : "active"}>1 Prise en compte</span><span className={["En cours","Terminée"].includes(mission.status) ? "done" : mission.status === "Prise en compte" ? "active" : ""}>2 Commencée</span><span className={mission.status === "Terminée" ? "done" : mission.status === "En cours" ? "active" : ""}>3 Terminée</span></div>
-      <div className="terrain-actions"><button className="action-acknowledge" disabled={mission.status !== "À faire"} onClick={onAcknowledge}><CheckCircle2/> Prendre en compte</button><button className="action-start" disabled={mission.status !== "Prise en compte"} onClick={onStart}><Play/> Commencer</button><label className="terrain-file-button"><Camera/> Prendre une photo<input type="file" accept="image/*" capture="environment" multiple onChange={(event) => void onAddPhoto(event.target.files)}/></label><details><summary><FileText/> Documents</summary>{mission.attachments.length ? mission.attachments.map((attachment) => attachment.dataUrl ? <a href={attachment.dataUrl} download={attachment.name} key={attachment.id}>{attachment.name}</a> : <span key={attachment.id}>{attachment.name}</span>) : <p>Aucun document joint.</p>}</details><button className="action-finish" disabled={mission.status !== "En cours"} onClick={onFinish}><CheckCircle2/> Terminer la mission</button></div>
+      <nav className="agent-detail-tabs" aria-label="Informations de la mission"><button type="button" className={section === "documents" ? "active" : ""} onClick={() => setSection("documents")}><FileText/> Documents <span>{documents.length}</span></button><button type="button" className={section === "map" ? "active" : ""} onClick={() => setSection("map")}><MapPin/> Carte</button><button type="button" className={section === "photos" ? "active" : ""} onClick={() => setSection("photos")}><Camera/> Photos <span>{electedPhotos.length + agentPhotos.length}</span></button></nav>
+      <section className="agent-tab-panel">
+        {section === "documents" && <div className="agent-documents"><h3>Documents de la mission</h3>{documents.length ? documents.map((document) => document.dataUrl ? <a href={document.dataUrl} download={document.name} key={document.id}><FileText/> {document.name}</a> : <span key={document.id}><FileText/> {document.name}</span>) : <div className="agent-tab-empty"><FileText/><span>Aucun document joint.</span></div>}</div>}
+        {section === "map" && <section className="agent-location"><div><MapPin/><span><strong>Adresse</strong>{mission.address || "Adresse à préciser"}</span></div>{mapUrl ? <iframe title={`Carte de ${mission.title}`} src={mapUrl} loading="lazy"/> : <div className="agent-tab-empty"><MapPin/><span>La position précise n’est pas encore renseignée.</span></div>}<a href={directionsUrl} target="_blank" rel="noreferrer"><Navigation/> Ouvrir l’itinéraire</a></section>}
+        {section === "photos" && <div className="agent-photos"><div className="agent-photos-heading"><div><h3>Photos de la mission</h3><p>Photos transmises par les élus et ajoutées sur le terrain.</p></div><label className="agent-add-photo"><Camera/> Prendre une photo<input type="file" accept="image/*" capture="environment" multiple onChange={(event) => void onAddPhoto(event.target.files)}/></label></div><PhotoGroup title="Photos des élus" photos={electedPhotos}/><PhotoGroup title="Photos des agents" photos={agentPhotos}/></div>}
+      </section>
+      <div className="terrain-actions terrain-main-actions"><button className="action-acknowledge" disabled={mission.status !== "À faire"} onClick={onAcknowledge}><CheckCircle2/> Prendre en compte</button><button className="action-start" disabled={mission.status !== "Prise en compte"} onClick={onStart}><Play/> Commencer</button><button className="action-finish" disabled={mission.status !== "En cours"} onClick={onFinish}><CheckCircle2/> Terminer la mission</button></div>
     </div>
   </article>;
+}
+
+function PhotoGroup({title,photos}:{title:string;photos:Mission["attachments"]}) {
+  return <section className="agent-photo-group"><h4>{title} <span>{photos.length}</span></h4>{photos.length ? <div>{photos.map((photo) => photo.dataUrl ? <figure key={photo.id}><img src={photo.dataUrl} alt={photo.name}/><figcaption>{photo.phase === "après" ? "Après intervention" : photo.name}</figcaption></figure> : <div className="agent-photo-missing" key={photo.id}><Camera/><span>{photo.name}</span></div>)}</div> : <p>Aucune photo.</p>}</section>;
 }
 
 function AlertForm({onClose,onSubmit,userId}:{onClose():void;onSubmit(value:FieldAlert):void;userId:string}) {
