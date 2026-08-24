@@ -32,8 +32,8 @@ export default function Header({ onOpenMenu }: HeaderProps) {
       </div>
 
       <div className="header-actions">
-        {azureAuthentication.status === "anonymous" && <a className="azure-session azure-session-login" href={azureLoginUrl}><LogIn size={15}/> Connexion Microsoft</a>}
-        {azureAuthentication.status === "authenticated" && <a className="azure-session azure-session-connected" href={azureLogoutUrl} title={`Connecté avec ${azureAuthentication.principal.userDetails}`}><span>Azure connecté</span><LogOut size={14}/></a>}
+        {azureAuthentication.status === "anonymous" && <a className="azure-session azure-session-login" href={azureLoginUrl}><LogIn size={15}/> Connexion CommunePilot</a>}
+        {azureAuthentication.status === "authenticated" && <a className="azure-session azure-session-connected" href={azureLogoutUrl} title={`Connecté avec ${azureAuthentication.principal.userDetails}`}><span>Compte sécurisé</span><LogOut size={14}/></a>}
         {azureAuthentication.status === "authenticated" && azureAuthentication.directoryError && <span className="azure-session azure-session-error" title={azureAuthentication.directoryError}>Annuaire indisponible</span>}
         {azureAuthentication.status === "error" && <span className="azure-session azure-session-error">Connexion Azure indisponible</span>}
         <Link className="notification-button" to="/notifications" aria-label="Notifications">
@@ -42,7 +42,7 @@ export default function Header({ onOpenMenu }: HeaderProps) {
         </Link>
         <div className="user-details">
           <strong>{user.firstName} {user.lastName}</strong>
-          <span>{user.role} · {azureAuthentication.status === "authenticated" ? "Azure" : "mode local"}</span>
+          <span>{user.role} · {azureAuthentication.status === "authenticated" ? "CommunePilot" : "mode local"}</span>
         </div>
         {azureAuthentication.status === "local" && <select className="profile-switcher" aria-label="Simuler un profil local" value={user.id} onChange={(e) => setCurrentUser(e.target.value)}>{users.filter((u) => u.active).map((u) => <option value={u.id} key={u.id}>{u.firstName} — {u.role}</option>)}</select>}
         <div className="user" aria-label={`Compte de ${user.firstName} ${user.lastName}`}>{user.firstName[0]}{user.lastName[0]}</div>
