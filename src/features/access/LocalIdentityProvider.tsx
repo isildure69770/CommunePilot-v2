@@ -17,7 +17,11 @@ export function LocalIdentityProvider({ children }: { children: React.ReactNode 
   const localUser = users.find((item) => item.id === currentId && item.active) ?? users.find((item) => item.active) ?? seedUsers[0];
   const azureUser = useMemo(() => azureAuthentication.status === "authenticated" ? azureIdentity(azureAuthentication.principal) : undefined, [azureAuthentication]);
   const user = azureUser ?? localUser;
-  const availableUsers = useMemo(() => azureUser ? [azureUser, ...users.filter((item) => item.id !== azureUser.id)] : users, [azureUser, users]);
+  const availableUsers = useMemo(() => azureUser
+    ? (azureAuthentication.status === "authenticated" && azureAuthentication.users.length
+      ? azureAuthentication.users
+      : [azureUser])
+    : users, [azureAuthentication, azureUser, users]);
   const value = useMemo<IdentityValue>(() => ({ user, users: availableUsers, refreshUsers, setCurrentUser(id) { if (azureUser) return; localStorage.setItem(PROFILE_KEY, id); setCurrentId(id); }, can: (domain, action = "view") => can(user.role, domain, action) }), [azureUser, availableUsers, user]);
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }

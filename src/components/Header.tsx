@@ -34,6 +34,7 @@ export default function Header({ onOpenMenu }: HeaderProps) {
       <div className="header-actions">
         {azureAuthentication.status === "anonymous" && <a className="azure-session azure-session-login" href={azureLoginUrl}><LogIn size={15}/> Connexion Microsoft</a>}
         {azureAuthentication.status === "authenticated" && <a className="azure-session azure-session-connected" href={azureLogoutUrl} title={`Connecté avec ${azureAuthentication.principal.userDetails}`}><span>Azure connecté</span><LogOut size={14}/></a>}
+        {azureAuthentication.status === "authenticated" && azureAuthentication.directoryError && <span className="azure-session azure-session-error" title={azureAuthentication.directoryError}>Annuaire indisponible</span>}
         {azureAuthentication.status === "error" && <span className="azure-session azure-session-error">Connexion Azure indisponible</span>}
         <Link className="notification-button" to="/notifications" aria-label="Notifications">
           <Bell size={19} />

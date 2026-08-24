@@ -16,7 +16,7 @@ function cleanAlert(alert) { return { ...alert, photos: Array.isArray(alert.phot
 function entityToAlert(entity) { return JSON.parse(entity.payload); }
 
 async function table() {
-  const connectionString = process.env.FIELD_ALERTS_STORAGE_CONNECTION_STRING;
+  const connectionString = process.env.COMMUNEPILOT_STORAGE_CONNECTION_STRING || process.env.FIELD_ALERTS_STORAGE_CONNECTION_STRING;
   if (!connectionString) throw new Error("Configuration FIELD_ALERTS_STORAGE_CONNECTION_STRING absente.");
   const client = TableClient.fromConnectionString(connectionString, tableName);
   await client.createTable().catch((error) => { if (error.statusCode !== 409) throw error; });
