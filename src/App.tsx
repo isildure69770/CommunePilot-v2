@@ -33,9 +33,10 @@ const NotificationsPage = lazy(() => import("./features/field/NotificationsPage"
 const CalendarPage = lazy(() => import("./features/calendar/pages/CalendarPage"));
 const CalendarSettingsPage = lazy(() => import("./features/calendar/pages/CalendarSettingsPage"));
 const CommissionPage = lazy(() => import("./features/commissions/pages/CommissionPage"));
+const LoginPage = lazy(() => import("./features/access/LoginPage"));
 
 const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
-function HomeRedirect() { const { ready, user } = useIdentity(); if (!ready) return <div className="empty-state">Vérification de votre accès Azure…</div>; return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
+function HomeRedirect() { const { ready, azureDeployment, authenticated, user } = useIdentity(); if (!ready) return <div className="empty-state">Vérification de votre accès Azure…</div>; if (azureDeployment && !authenticated) return <Navigate to="/connexion" replace/>; return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
 
 export default function App() {
   return (
@@ -126,6 +127,8 @@ export default function App() {
           element={<CalendarSettingsPage />}
         />
       </Route>
+
+      <Route path="/connexion" element={<LoginPage/>}/>
 
       <Route
         path="/"
