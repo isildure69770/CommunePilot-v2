@@ -6,6 +6,7 @@ const edit = (): DomainPermissions => ({ view: true, create: true, update: true,
 const all = (): DomainPermissions => ({ view: true, create: true, update: true, delete: true });
 
 export const permissionMatrix: Record<UserRole, Record<PermissionDomain, DomainPermissions>> = {
+  "Aucun accès": Object.fromEntries(["dashboard","mails","dossiers","documents","equipements","missions","signalements","carte","calendrier","utilisateurs"].map((d) => [d, none()])) as Record<PermissionDomain, DomainPermissions>,
   Maire: Object.fromEntries(["dashboard","mails","dossiers","documents","equipements","missions","signalements","carte","calendrier","utilisateurs"].map((d) => [d, all()])) as Record<PermissionDomain, DomainPermissions>,
   Adjoint: { dashboard: read(), mails: edit(), dossiers: edit(), documents: edit(), equipements: edit(), missions: edit(), signalements: edit(), carte: edit(), calendrier: edit(), utilisateurs: read() },
   Conseiller: { dashboard: read(), mails: read(), dossiers: read(), documents: read(), equipements: read(), missions: read(), signalements: edit(), carte: read(), calendrier: read(), utilisateurs: none() },

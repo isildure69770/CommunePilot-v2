@@ -43,7 +43,7 @@ export default function Header({ onOpenMenu }: HeaderProps) {
           <strong>{user.firstName} {user.lastName}</strong>
           <span>{user.role} · {azureAuthentication.status === "authenticated" ? "Azure" : "mode local"}</span>
         </div>
-        <select className="profile-switcher" aria-label="Simuler un profil local" value={user.id} onChange={(e) => setCurrentUser(e.target.value)}>{users.filter((u) => u.active).map((u) => <option value={u.id} key={u.id}>{u.firstName} — {u.role}</option>)}</select>
+        {azureAuthentication.status === "local" && <select className="profile-switcher" aria-label="Simuler un profil local" value={user.id} onChange={(e) => setCurrentUser(e.target.value)}>{users.filter((u) => u.active).map((u) => <option value={u.id} key={u.id}>{u.firstName} — {u.role}</option>)}</select>}
         <div className="user" aria-label={`Compte de ${user.firstName} ${user.lastName}`}>{user.firstName[0]}{user.lastName[0]}</div>
       </div>
     </header>

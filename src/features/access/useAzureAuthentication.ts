@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { UserRole } from "./types";
 
 interface AzurePrincipal {
   identityProvider: string;
@@ -12,6 +13,22 @@ export type AzureAuthenticationState =
   | { status: "authenticated"; principal: AzurePrincipal };
 
 const isAzureHost = () => window.location.hostname.endsWith(".azurestaticapps.net");
+
+const communeRoles: Record<string, UserRole> = {
+  maire: "Maire",
+  adjoint: "Adjoint",
+  conseiller: "Conseiller",
+  "agent-administratif": "Agent administratif",
+  "agent-technique": "Agent technique",
+};
+
+export function communeRoleFromAzure(userRoles: string[]): UserRole {
+  for (const role of userRoles) {
+    const communeRole = communeRoles[role.toLocaleLowerCase("fr-FR")];
+    if (communeRole) return communeRole;
+  }
+  return "Aucun accès";
+}
 
 export function useAzureAuthentication() {
   const [state, setState] = useState<AzureAuthenticationState>(() => ({
