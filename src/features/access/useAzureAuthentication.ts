@@ -77,3 +77,5 @@ export function useAzureAuthentication() {
 
 export const azureLoginUrl = "/.auth/login/aad?post_login_redirect_uri=/dashboard";
 export const azureLogoutUrl = "/.auth/logout?post_logout_redirect_uri=/dashboard";
+export const azureSwitchAccountUrl = "/.auth/logout?post_logout_redirect_uri=/connexion%3Fautre_compte%3D1";
+export const azureAlternateLoginUrl = "/.auth/login/aad?post_login_redirect_uri=/dashboard&prompt=select_account";

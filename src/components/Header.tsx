@@ -1,6 +1,6 @@
-import { Bell, LogIn, LogOut, Menu } from "lucide-react";
+import { Bell, LogIn, LogOut, Menu, RefreshCw } from "lucide-react";
 import { useIdentity } from "../features/access/LocalIdentityProvider";
-import { azureLoginUrl, azureLogoutUrl, useAzureAuthentication } from "../features/access/useAzureAuthentication";
+import { azureLoginUrl, azureLogoutUrl, azureSwitchAccountUrl, useAzureAuthentication } from "../features/access/useAzureAuthentication";
 import { useFieldData } from "../features/field/useFieldData";
 import { Link, useLocation } from "react-router-dom";
 import { navigationItems } from "../navigation/navigationItems";
@@ -33,6 +33,7 @@ export default function Header({ onOpenMenu }: HeaderProps) {
 
       <div className="header-actions">
         {azureAuthentication.status === "anonymous" && <a className="azure-session azure-session-login" href={azureLoginUrl}><LogIn size={15}/> Connexion CommunePilot</a>}
+        {azureAuthentication.status === "authenticated" && <a className="azure-session azure-session-switch" href={azureSwitchAccountUrl} title="Fermer cette session et utiliser une autre adresse"><span>Changer de compte</span><RefreshCw size={14}/></a>}
         {azureAuthentication.status === "authenticated" && <a className="azure-session azure-session-connected" href={azureLogoutUrl} title={`Connecté avec ${azureAuthentication.principal.userDetails}`}><span>Compte sécurisé</span><LogOut size={14}/></a>}
         {azureAuthentication.status === "authenticated" && azureAuthentication.directoryError && <span className="azure-session azure-session-error" title={azureAuthentication.directoryError}>Annuaire indisponible</span>}
         {azureAuthentication.status === "error" && <span className="azure-session azure-session-error">Connexion Azure indisponible</span>}
