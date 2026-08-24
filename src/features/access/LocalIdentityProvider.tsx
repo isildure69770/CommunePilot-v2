@@ -4,7 +4,7 @@ import { seedUsers, userRepository } from "./userRepository";
 import type { CommuneUser, PermissionAction, PermissionDomain } from "./types";
 import { communeRoleFromAzure, useAzureAuthentication } from "./useAzureAuthentication";
 
-interface IdentityValue { user: CommuneUser; users: CommuneUser[]; setCurrentUser(id: string): void; refreshUsers(): void; can(domain: PermissionDomain, action?: PermissionAction): boolean; }
+interface IdentityValue { ready: boolean; user: CommuneUser; users: CommuneUser[]; setCurrentUser(id: string): void; refreshUsers(): void; can(domain: PermissionDomain, action?: PermissionAction): boolean; }
 const IdentityContext = createContext<IdentityValue | null>(null);
 const PROFILE_KEY = "communepilot-local-profile-v1";
 
@@ -22,7 +22,7 @@ export function LocalIdentityProvider({ children }: { children: React.ReactNode 
       ? azureAuthentication.users
       : [azureUser])
     : users, [azureAuthentication, azureUser, users]);
-  const value = useMemo<IdentityValue>(() => ({ user, users: availableUsers, refreshUsers, setCurrentUser(id) { if (azureUser) return; localStorage.setItem(PROFILE_KEY, id); setCurrentId(id); }, can: (domain, action = "view") => can(user.role, domain, action) }), [azureUser, availableUsers, user]);
+  const value = useMemo<IdentityValue>(() => ({ ready: azureAuthentication.status !== "loading", user, users: availableUsers, refreshUsers, setCurrentUser(id) { if (azureUser) return; localStorage.setItem(PROFILE_KEY, id); setCurrentId(id); }, can: (domain, action = "view") => can(user.role, domain, action) }), [azureAuthentication.status, azureUser, availableUsers, user]);
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
 // oxlint-disable-next-line react/only-export-components -- Le hook partage volontairement le contexte privé de ce fournisseur.

@@ -35,7 +35,7 @@ const CalendarSettingsPage = lazy(() => import("./features/calendar/pages/Calend
 const CommissionPage = lazy(() => import("./features/commissions/pages/CommissionPage"));
 
 const protect = (domain: Parameters<typeof ProtectedRoute>[0]["domain"], child: React.ReactNode, action?: Parameters<typeof ProtectedRoute>[0]["action"]) => <ProtectedRoute domain={domain} action={action}>{child}</ProtectedRoute>;
-function HomeRedirect() { const { user } = useIdentity(); return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
+function HomeRedirect() { const { ready, user } = useIdentity(); if (!ready) return <div className="empty-state">Vérification de votre accès Azure…</div>; return <Navigate to={user.role === "Agent technique" ? "/terrain" : "/dashboard"} replace />; }
 
 export default function App() {
   return (
