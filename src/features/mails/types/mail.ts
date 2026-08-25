@@ -36,6 +36,10 @@ export interface MunicipalMail {
   dossierId?: number;
   attachments: MailAttachment[];
   summary?: string;
+  aiUrgency?: "Faible" | "Normale" | "Haute" | "Urgente";
+  aiDeadline?: string;
+  aiSuggestedAction?: string;
+  aiAnalyzedAt?: string;
   internalNotes?: string;
   followUps: MailFollowUp[];
   source: "local" | "gmail" | "outlook";

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Archive, Check, CirclePlus, Download, FilePlus2, FolderOpen, Link2, LogOut, Mail, Paperclip, RefreshCw, Search, Trash2, X } from "lucide-react";
+import { Archive, Bot, Check, CirclePlus, Download, FilePlus2, FolderOpen, Link2, LogOut, Mail, Paperclip, RefreshCw, Search, Trash2, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { initialDossiers } from "../../dossiers/data/dossiers";
 import { deleteDocumentBlob, saveDocumentBlob } from "../../dossiers/services/dossierDocumentStorage";
@@ -12,6 +12,7 @@ import { useMicrosoftAuth } from "../auth/MicrosoftAuthProvider";
 import { useMailSync } from "../providers/MailSyncProvider";
 import { useIdentity } from "../../access/LocalIdentityProvider";
 import { dossierActivityRepository } from "../../dossiers/services/dossierActivityRepository";
+import { analyzeMailLocally } from "../services/localMailAi";
 
 const emptyFilters: MailFilters = { search: "", status: "Tous", commission: "Toutes", dossierId: "Tous", hasAttachments: "Tous", dateFrom: "", dateTo: "" };
 const commissions = ["Voirie", "Travaux", "Vie locale", "Finances", "Bâtiments", "Conseil municipal"];
@@ -41,6 +42,8 @@ export default function MailsPage() {
   const [addModalMode, setAddModalMode] = useState<"new" | "existing">("existing");
   const [addingDocuments, setAddingDocuments] = useState(false);
   const [addError, setAddError] = useState("");
+  const [analyzingMail, setAnalyzingMail] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const selected = mails.find((mail) => mail.id === selectedId) ?? null;
   const commissionOptions = useMemo(() => Array.from(new Set([...commissions, ...mails.map((mail) => mail.commission).filter(Boolean) as string[]])).sort(), [mails]);
@@ -65,6 +68,21 @@ export default function MailsPage() {
     setSelectedId(mail.id);
     setSearchParams({ mail: String(mail.id) });
     setNotice("");
+    setAiError("");
+  }
+
+  async function analyzeSelectedMail() {
+    if (!selected || analyzingMail) return;
+    setAnalyzingMail(true);
+    setAiError("");
+    try {
+      const analysis = await analyzeMailLocally(selected);
+      patchSelected({ summary: analysis.summary, category: analysis.category, aiUrgency: analysis.urgency, aiDeadline: analysis.deadline || undefined, aiSuggestedAction: analysis.suggestedAction, aiAnalyzedAt: new Date().toISOString() }, "Analyse locale terminée. Vérifiez les propositions avant de les utiliser.");
+    } catch (reason) {
+      setAiError(reason instanceof Error ? reason.message : "L’analyse locale n’a pas pu être réalisée.");
+    } finally {
+      setAnalyzingMail(false);
+    }
   }
 
   function patchSelected(changes: Partial<MunicipalMail>, message?: string) {
@@ -173,7 +191,7 @@ export default function MailsPage() {
             {notice && <div className="mail-notice" role="status">{notice}{selected.dossierId && can("dossiers", "view") && <> <Link to={`/dossiers/${selected.dossierId}`}><FolderOpen size={14} /> Ouvrir le dossier</Link></>}</div>}
             <section className="mail-detail-section"><h4>Traitement</h4><div className="mail-fields-grid"><label>Statut<select value={selected.status} onChange={(event) => patchSelected({ status: event.target.value as MailStatus })}>{MAIL_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></label><label>Commission<select value={selected.commission ?? ""} onChange={(event) => patchSelected({ commission: event.target.value || undefined })}><option value="">Non classée</option>{commissionOptions.map((commission) => <option key={commission}>{commission}</option>)}</select></label><label>Catégorie<select value={selected.category ?? ""} onChange={(event) => patchSelected({ category: event.target.value || undefined })}><option value="">Non classée</option>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label>Dossier<select value={selected.dossierId ?? ""} onChange={(event) => patchSelected({ dossierId: event.target.value ? Number(event.target.value) : undefined })}><option value="">Aucun dossier</option>{dossiers.map((dossier) => <option key={dossier.id} value={dossier.id}>{dossier.title}</option>)}</select></label></div><div className="mail-dossier-actions">{selected.attachments.some((item) => !item.isInline) && <button className="primary-button compact-button" type="button" disabled={selected.source !== "outlook" || !selected.externalId || !account} onClick={() => { setAddError(""); setAddModalMode("existing"); setAddModalOpen(true); }}><FilePlus2 /> Ajouter à un dossier</button>}{can("dossiers", "create") && <button className="secondary-button compact-button" type="button" onClick={() => { setAddError(""); setAddModalMode("new"); setAddModalOpen(true); }}><CirclePlus /> Créer un dossier</button>}</div>{selected.attachments.length > 0 && (!account || selected.source !== "outlook") && <small>Connectez le compte Outlook source pour récupérer le contenu réel des pièces jointes. Vous pouvez créer le dossier sans document.</small>}</section>
             <section className="mail-detail-section"><h4>Message</h4><p className="mail-content">{selected.content || selected.preview}</p></section>
-            <section className="mail-detail-section"><h4>Résumé opérationnel</h4><textarea rows={3} value={selected.summary ?? ""} placeholder="Résumé court saisi localement…" onChange={(event) => patchSelected({ summary: event.target.value })} /><small>Champ local utilisateur : aucune IA distante n’est simulée.</small><label>Notes internes<textarea rows={4} value={selected.internalNotes ?? ""} placeholder="Notes visibles uniquement dans CommunePilot…" onChange={(event) => patchSelected({ internalNotes: event.target.value })} /></label></section>
+            <section className="mail-detail-section mail-ai-section"><div className="mail-ai-heading"><h4><Bot /> Assistant IA local</h4><button className="primary-button compact-button" type="button" disabled={analyzingMail} onClick={() => void analyzeSelectedMail()}><Bot /> {analyzingMail ? "Analyse en cours…" : selected.aiAnalyzedAt ? "Relancer l’analyse" : "Analyser ce mail"}</button></div>{aiError && <p className="mail-error" role="alert">{aiError}</p>}<textarea rows={3} value={selected.summary ?? ""} placeholder="Le résumé proposé apparaîtra ici…" onChange={(event) => patchSelected({ summary: event.target.value })} />{selected.aiAnalyzedAt && <div className="mail-ai-results"><span><small>Urgence proposée</small><strong className={`mail-ai-urgency urgency-${selected.aiUrgency?.toLowerCase()}`}>{selected.aiUrgency ?? "Normale"}</strong></span><span><small>Échéance détectée</small><strong>{selected.aiDeadline ? new Date(`${selected.aiDeadline}T12:00:00`).toLocaleDateString("fr-FR") : "Aucune"}</strong></span><span className="mail-ai-action"><small>Action suggérée</small><strong>{selected.aiSuggestedAction || "Aucune action proposée"}</strong></span></div>}<small>Analyse effectuée sur votre serveur avec Ollama. Les résultats sont des propositions à vérifier.</small><label>Notes internes<textarea rows={4} value={selected.internalNotes ?? ""} placeholder="Notes visibles uniquement dans CommunePilot…" onChange={(event) => patchSelected({ internalNotes: event.target.value })} /></label></section>
             <section className="mail-detail-section"><h4>Pièces jointes ({selected.attachments.length})</h4>{selected.attachments.length ? <ul className="attachment-list">{selected.attachments.map((attachment) => <li key={attachment.id}><Paperclip /><span><strong>{attachment.name}</strong><small>{attachment.mimeType ?? "Type inconnu"}{attachment.size ? ` · ${Math.ceil(attachment.size / 1024)} Ko` : ""}</small></span>{selected.source === "outlook" && selected.externalId && account ? <button className="text-link" type="button" onClick={() => void downloadAttachment(selected.externalId!, attachment.id, attachment.name).catch(() => undefined)}><Download /> Télécharger</button> : attachment.url ? <a href={attachment.url} target="_blank" rel="noreferrer">Ouvrir</a> : <em>Non récupérée</em>}</li>)}</ul> : <p className="muted-copy">Aucune pièce jointe disponible.</p>}</section>
             <section className="mail-detail-section"><h4>Actions de suivi</h4><div className="follow-up-form"><input value={followUpTitle} onChange={(event) => setFollowUpTitle(event.target.value)} placeholder="Action à réaliser…" /><input type="date" value={followUpDueDate} onChange={(event) => setFollowUpDueDate(event.target.value)} /><button className="primary-button" type="button" onClick={createFollowUp} disabled={!followUpTitle.trim()}><CirclePlus /> Ajouter</button></div>{selected.followUps.length ? <ul className="follow-up-list">{selected.followUps.map((followUp) => <li key={followUp.id}><input aria-label={`Terminer ${followUp.title}`} type="checkbox" checked={followUp.completed} onChange={() => patchSelected({ followUps: selected.followUps.map((item) => item.id === followUp.id ? { ...item, completed: !item.completed } : item) })} /><span className={followUp.completed ? "completed" : ""}>{followUp.title}{followUp.dueDate && <small>Échéance : {new Date(`${followUp.dueDate}T12:00:00`).toLocaleDateString("fr-FR")}</small>}</span></li>)}</ul> : <p className="muted-copy">Aucune action de suivi.</p>}</section>
             <footer><span><Link2 />{selected.dossierId ? "Rattaché à un dossier" : "Sans dossier"}</span><span><FolderOpen />Source : {selected.source === "local" ? "données locales" : selected.source}</span></footer>
