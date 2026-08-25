@@ -7,8 +7,20 @@ function shortText(value, maximum) {
   return typeof value === "string" ? value.trim().slice(0, maximum) : "";
 }
 
-function validDate(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+function explicitDate(value) {
+  const iso = /\b(20\d{2})-(0[1-9]|1[0-2])-([0-2]\d|3[01])\b/.exec(value);
+  if (iso) return iso[0];
+  const months = { janvier: 1, février: 2, fevrier: 2, mars: 3, avril: 4, mai: 5, juin: 6, juillet: 7, août: 8, aout: 8, septembre: 9, octobre: 10, novembre: 11, décembre: 12, decembre: 12 };
+  const french = /\b([0-2]?\d|3[01])\s+(janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre)\s+(20\d{2})\b/i.exec(value);
+  if (!french) return null;
+  return `${french[3]}-${String(months[french[2].toLowerCase()]).padStart(2, "0")}-${String(Number(french[1])).padStart(2, "0")}`;
+}
+
+function groundedCategory(content, proposed) {
+  if (/\b(facture|devis|paiement|règlement|reglement|budget|comptab)/i.test(content)) return "Comptabilité";
+  if (/\b(subvention|aide financière|aide financiere)/i.test(content)) return "Subventions";
+  if (/\b(réserv|reserv)/i.test(content)) return "Réservation";
+  return categories.includes(proposed) ? proposed : "Autre";
 }
 
 export async function analyzeMailWithOllama(raw) {
@@ -39,9 +51,9 @@ export async function analyzeMailWithOllama(raw) {
     const parsed = JSON.parse(value?.message?.content || "{}");
     return {
       summary: shortText(parsed.summary, 900) || "Résumé indisponible.",
-      category: categories.includes(parsed.category) ? parsed.category : "Autre",
-      urgency: urgencies.includes(parsed.urgency) ? parsed.urgency : "Normale",
-      deadline: validDate(parsed.deadline),
+      category: groundedCategory(`${subject}\n${content}`, parsed.category),
+      urgency: /\b(urgent|urgence|immédiat|immediat)\b/i.test(`${subject}\n${content}`) ? "Urgente" : urgencies.includes(parsed.urgency) ? parsed.urgency : "Normale",
+      deadline: explicitDate(content),
       suggestedAction: shortText(parsed.suggestedAction, 500) || "Lire et qualifier le message.",
     };
   } catch (error) {
